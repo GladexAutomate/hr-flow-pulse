@@ -1,0 +1,73 @@
+{
+  "name": "HRRequest",
+  "type": "object",
+  "properties": {
+    "branch": {
+      "type": "string",
+      "enum": [
+        "Gladex Main",
+        "POTB",
+        "Robinsons Manila",
+        "SM Manila",
+        "Klikk"
+      ]
+    },
+    "subject": {
+      "type": "string",
+      "enum": [
+        "NTE Request",
+        "Resource Request",
+        "General Announcement Request",
+        "WFH Request",
+        "Others"
+      ]
+    },
+    "details": {
+      "type": "string"
+    },
+    "requested_by": {
+      "type": "string"
+    },
+    "email_address": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "In Progress",
+        "Completed"
+      ],
+      "default": "Pending"
+    },
+    "date_started": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_completed": {
+      "type": "string",
+      "format": "date"
+    },
+    "sla_days": {
+      "type": "number"
+    },
+    "breach_status": {
+      "type": "string",
+      "enum": [
+        "Valid",
+        "Breached",
+        "Pending"
+      ]
+    }
+  },
+  "required": [
+    "branch",
+    "subject",
+    "details",
+    "requested_by",
+    "email_address"
+  ]
+}
