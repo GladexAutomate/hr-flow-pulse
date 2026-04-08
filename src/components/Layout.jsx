@@ -1,10 +1,11 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { ClipboardList, BarChart3, LayoutDashboard, LogOut } from "lucide-react";
+import { ClipboardList, BarChart3, LayoutDashboard, LogOut, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const NAV_ITEMS = [
   { path: "/", label: "Tracker", icon: LayoutDashboard },
   { path: "/reports", label: "Reports", icon: BarChart3 },
+  { path: "/users", label: "Users", icon: Users },
 ];
 
 export default function Layout() {

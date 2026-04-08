@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import HRTracker from './pages/HRTracker';
 import Reports from './pages/Reports';
 import RequestForm from './pages/RequestForm';
+import UserManagement from './pages/UserManagement';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -41,6 +42,7 @@ const AuthenticatedApp = () => {
       <Route element={<Layout />}>
         <Route path="/" element={<HRTracker />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/users" element={<UserManagement />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
