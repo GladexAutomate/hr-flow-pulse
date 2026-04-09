@@ -154,6 +154,15 @@ export default function HRTracker() {
       alert("Cannot complete NTE Request without a NOD attachment. Please upload the NOD first.");
       return;
     }
+    // Block completing other subjects without proof of completion
+    if (editData.status === "Completed" && req.subject !== "NTE Request") {
+      const atts = Array.isArray(req.hr_attachments) ? req.hr_attachments : [];
+      const hasProof = atts.some(a => a.type === "Proof of Completion");
+      if (!hasProof) {
+        alert("Cannot complete this request without a Proof of Completion attachment. Please upload proof first.");
+        return;
+      }
+    }
     const breach_status = computeBreach({ ...req, ...editData });
     const newTimeline = [
       ...(Array.isArray(req.timeline) ? req.timeline : []),
