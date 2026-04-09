@@ -115,7 +115,7 @@ function DetailsModal({ req, onClose, onUpdated, user }) {
 
 export default function HRTracker() {
   const { user } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem("hr_welcomed"));
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -192,7 +192,7 @@ export default function HRTracker() {
   return (
     <div className="space-y-6">
       {showWelcome && (
-        <WelcomeScreen user={user} onDismiss={() => setShowWelcome(false)} />
+        <WelcomeScreen user={user} onDismiss={() => { sessionStorage.setItem("hr_welcomed", "1"); setShowWelcome(false); }} />
       )}
       {viewingReq && (
         <DetailsModal
