@@ -72,7 +72,7 @@ function DetailsModal({ req, onClose }) {
 
 export default function HRTracker() {
   const { user } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem("welcomed"));
+  const [showWelcome, setShowWelcome] = useState(true);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -138,7 +138,7 @@ export default function HRTracker() {
       {showWelcome && (
         <WelcomeScreen
           user={user}
-          onDismiss={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
+          onDismiss={() => setShowWelcome(false)}
         />
       )}
       {viewingReq && <DetailsModal req={viewingReq} onClose={() => setViewingReq(null)} />}
