@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import WelcomeScreen from "../components/WelcomeScreen";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Upload, Paperclip, Loader2 } from "lucide-react";
@@ -69,6 +71,8 @@ function DetailsModal({ req, onClose }) {
 }
 
 export default function HRTracker() {
+  const { user } = useAuth();
+  const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem("welcomed"));
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -131,6 +135,12 @@ export default function HRTracker() {
 
   return (
     <div className="space-y-6">
+      {showWelcome && (
+        <WelcomeScreen
+          user={user}
+          onDismiss={() => { sessionStorage.setItem("welcomed", "1"); setShowWelcome(false); }}
+        />
+      )}
       {viewingReq && <DetailsModal req={viewingReq} onClose={() => setViewingReq(null)} />}
 
       {/* Stats */}
