@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import WelcomeScreen from "../components/WelcomeScreen";
+import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
+import RecordTimeline from "../components/RecordTimeline";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
-import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Upload, Paperclip, Loader2 } from "lucide-react";
+import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
 
 const STATUS_COLORS = {
   "Pending": "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -19,7 +21,16 @@ const BREACH_COLORS = {
 };
 
 const RESOURCE_SLA = { "Rank and File": 15, "Supervisory": 20, "Managerial": 30 };
-const BASE_SLA = { "NTE Request": 8, "General Announcement Request": 2, "WFH Request": 2, "Others": 7 };
+const BASE_SLA = {
+  "NTE Request": 8,
+  "General Announcement Request": 2,
+  "WFH Request": 2,
+  "COE (Certificate of Employment)": 2,
+  "ITR (Income Tax Return)": 7,
+  "LAST PAY": 30,
+  "ATD (Authority to Deduct)": 7,
+  "Others": 7,
+};
 
 function getSLA(req) {
   if (req.subject === "Resource Request") return RESOURCE_SLA[req.resource_type] || req.sla_days || 15;
@@ -34,35 +45,67 @@ function computeBreach(request) {
   return days <= sla ? "Valid" : "Breached";
 }
 
-function DetailsModal({ req, onClose }) {
+function hasNOD(req) {
+  if (req.subject !== "NTE Request") return true;
+  const atts = Array.isArray(req.hr_attachments) ? req.hr_attachments : [];
+  return atts.some(a => a.type === "NOD");
+}
+
+function DetailsModal({ req, onClose, onUpdated, user }) {
+  const [tab, setTab] = useState("details");
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-800 text-lg">Request Details</h3>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex gap-2">
+            {["details", "attachments", "timeline"].map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${tab === t ? "bg-blue-800 text-white" : "text-gray-500 hover:bg-gray-100"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
-        <div className="space-y-3 text-sm">
-          <div><span className="font-semibold text-gray-600">Branch:</span> <span className="text-gray-800">{req.branch}</span></div>
-          <div><span className="font-semibold text-gray-600">Subject:</span> <span className="text-gray-800">{req.subject}</span></div>
-          {req.resource_type && <div><span className="font-semibold text-gray-600">Resource Type:</span> <span className="text-gray-800">{req.resource_type}</span></div>}
-          <div><span className="font-semibold text-gray-600">Requested By:</span> <span className="text-gray-800">{req.requested_by}</span></div>
-          <div><span className="font-semibold text-gray-600">Email:</span> <span className="text-gray-800">{req.email_address}</span></div>
-          <div>
-            <span className="font-semibold text-gray-600">Details:</span>
-            <p className="mt-1 text-gray-700 bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{req.details || "—"}</p>
-          </div>
-          {req.file_url && (
-            <div>
-              <span className="font-semibold text-gray-600">Attached File:</span>{" "}
-              <a href={req.file_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">View File</a>
+
+        <div className="overflow-y-auto p-5 flex-1">
+          {tab === "details" && (
+            <div className="space-y-3 text-sm">
+              <div><span className="font-semibold text-gray-600">Branch:</span> <span className="text-gray-800">{req.branch || "—"}</span></div>
+              <div><span className="font-semibold text-gray-600">Subject:</span> <span className="text-gray-800">{req.subject}</span></div>
+              {req.resource_type && <div><span className="font-semibold text-gray-600">Resource Type:</span> <span className="text-gray-800">{req.resource_type}</span></div>}
+              <div><span className="font-semibold text-gray-600">Requested By:</span> <span className="text-gray-800">{req.requested_by}</span></div>
+              <div><span className="font-semibold text-gray-600">Email:</span> <span className="text-gray-800">{req.email_address}</span></div>
+              {req.department && <div><span className="font-semibold text-gray-600">Department:</span> <span className="text-gray-800">{req.department}</span></div>}
+              {req.purpose && <div><span className="font-semibold text-gray-600">Purpose:</span> <span className="text-gray-800">{req.purpose}</span></div>}
+              {req.tin && <div><span className="font-semibold text-gray-600">TIN:</span> <span className="text-gray-800">{req.tin}</span></div>}
+              {req.address && <div><span className="font-semibold text-gray-600">Address:</span> <span className="text-gray-800">{req.address}</span></div>}
+              {req.bday && <div><span className="font-semibold text-gray-600">Birthday:</span> <span className="text-gray-800">{req.bday}</span></div>}
+              {req.employment_date && <div><span className="font-semibold text-gray-600">Employment Date:</span> <span className="text-gray-800">{req.employment_date}</span></div>}
+              {req.compensation_summary && <div><span className="font-semibold text-gray-600">Compensation Summary:</span> <span className="text-gray-800">{req.compensation_summary}</span></div>}
+              {req.amount && <div><span className="font-semibold text-gray-600">Amount:</span> <span className="text-gray-800">{req.amount}</span></div>}
+              {req.reason_of_atd && <div><span className="font-semibold text-gray-600">Reason of ATD:</span> <span className="text-gray-800">{req.reason_of_atd}</span></div>}
+              {req.details && (
+                <div>
+                  <span className="font-semibold text-gray-600">Details:</span>
+                  <p className="mt-1 text-gray-700 bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{req.details}</p>
+                </div>
+              )}
+              {req.file_url && (
+                <div>
+                  <span className="font-semibold text-gray-600">Form Attachment:</span>{" "}
+                  <a href={req.file_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">View File</a>
+                </div>
+              )}
             </div>
           )}
-          {req.completion_file_url && (
-            <div>
-              <span className="font-semibold text-gray-600">Proof of Completion:</span>{" "}
-              <a href={req.completion_file_url} target="_blank" rel="noreferrer" className="text-emerald-500 hover:underline text-xs">View Proof</a>
-            </div>
+
+          {tab === "attachments" && (
+            <HRAttachmentsPanel req={req} onUpdated={onUpdated} currentUser={user} />
+          )}
+
+          {tab === "timeline" && (
+            <RecordTimeline timeline={req.timeline} />
           )}
         </div>
       </div>
@@ -81,8 +124,6 @@ export default function HRTracker() {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [viewingReq, setViewingReq] = useState(null);
-  const [uploadingId, setUploadingId] = useState(null);
-  const fileInputRef = useRef();
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,27 +134,42 @@ export default function HRTracker() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Refresh viewingReq after attachment upload
+  const handleUpdated = async () => {
+    await fetchData();
+    if (viewingReq) {
+      const fresh = await base44.entities.HRRequest.filter({ id: viewingReq.id });
+      if (fresh?.length) setViewingReq(fresh[0]);
+    }
+  };
+
   const startEdit = (req) => {
     setEditingId(req.id);
     setEditData({ status: req.status, date_started: req.date_started || "", date_completed: req.date_completed || "" });
   };
 
   const saveEdit = async (req) => {
+    // Block completing NTE without NOD
+    if (editData.status === "Completed" && req.subject === "NTE Request" && !hasNOD({ ...req, ...editData })) {
+      alert("Cannot complete NTE Request without a NOD attachment. Please upload the NOD first.");
+      return;
+    }
     const breach_status = computeBreach({ ...req, ...editData });
-    await base44.entities.HRRequest.update(req.id, { ...editData, breach_status });
+    const newTimeline = [
+      ...(Array.isArray(req.timeline) ? req.timeline : []),
+      {
+        timestamp: new Date().toISOString(),
+        action: "Status Updated",
+        user: user?.email || "HR Staff",
+        details: `Status changed to: ${editData.status}${editData.date_started ? ` | Date Started: ${editData.date_started}` : ""}${editData.date_completed ? ` | Date Completed: ${editData.date_completed}` : ""}`,
+      },
+    ];
+    await base44.entities.HRRequest.update(req.id, { ...editData, breach_status, timeline: newTimeline });
     setEditingId(null);
     fetchData();
   };
 
-  const handleCompletionUpload = async (req, file) => {
-    setUploadingId(req.id);
-    const res = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.HRRequest.update(req.id, { completion_file_url: res.file_url });
-    setUploadingId(null);
-    fetchData();
-  };
-
-  const branches = ["All", ...new Set(requests.map(r => r.branch))];
+  const branches = ["All", ...new Set(requests.map(r => r.branch).filter(Boolean))];
   const filtered = requests.filter(r => {
     const matchSearch = r.requested_by?.toLowerCase().includes(search.toLowerCase()) ||
       r.subject?.toLowerCase().includes(search.toLowerCase()) ||
@@ -136,12 +192,16 @@ export default function HRTracker() {
   return (
     <div className="space-y-6">
       {showWelcome && (
-        <WelcomeScreen
+        <WelcomeScreen user={user} onDismiss={() => setShowWelcome(false)} />
+      )}
+      {viewingReq && (
+        <DetailsModal
+          req={viewingReq}
+          onClose={() => { setViewingReq(null); fetchData(); }}
+          onUpdated={handleUpdated}
           user={user}
-          onDismiss={() => setShowWelcome(false)}
         />
       )}
-      {viewingReq && <DetailsModal req={viewingReq} onClose={() => setViewingReq(null)} />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
@@ -195,7 +255,7 @@ export default function HRTracker() {
             <table className="w-full text-sm">
               <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white">
                 <tr>
-                  {["Date Submitted", "Branch", "Subject", "Requested By", "SLA", "Status", "Date Started", "Date Completed", "Breach", "Attachments", "Actions"].map(h => (
+                  {["Date Submitted", "Branch", "Subject", "Requested By", "SLA", "Status", "Date Started", "Date Completed", "Breach", "Form Attachment", "HR Attachments", "Actions"].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -204,12 +264,13 @@ export default function HRTracker() {
                 {filtered.map((req, i) => {
                   const isEditing = editingId === req.id;
                   const sla = getSLA(req);
+                  const hrAtts = Array.isArray(req.hr_attachments) ? req.hr_attachments : [];
                   return (
                     <tr key={req.id} className={`hover:bg-orange-50/30 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
                       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                         {req.created_date ? format(new Date(req.created_date), "MMM d, yyyy") : "-"}
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{req.branch}</td>
+                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{req.branch || "—"}</td>
                       <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                         <div>{req.subject}</div>
                         {req.resource_type && <div className="text-xs text-blue-500">{req.resource_type}</div>}
@@ -250,28 +311,29 @@ export default function HRTracker() {
                           {req.breach_status || "Pending"}
                         </span>
                       </td>
+                      {/* Form Attachment - from requester */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          {req.file_url && (
-                            <a href={req.file_url} target="_blank" rel="noreferrer"
-                              className="text-blue-500 hover:text-blue-700 flex items-center gap-1 text-xs">
-                              <ExternalLink className="w-3 h-3" /> Request
-                            </a>
-                          )}
-                          {req.completion_file_url ? (
-                            <a href={req.completion_file_url} target="_blank" rel="noreferrer"
-                              className="text-emerald-500 hover:text-emerald-700 flex items-center gap-1 text-xs">
-                              <Paperclip className="w-3 h-3" /> Proof
-                            </a>
-                          ) : (
-                            <label className="text-orange-400 hover:text-orange-600 flex items-center gap-1 text-xs cursor-pointer">
-                              {uploadingId === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                              {uploadingId === req.id ? "Uploading..." : "Add Proof"}
-                              <input type="file" className="hidden"
-                                onChange={e => e.target.files[0] && handleCompletionUpload(req, e.target.files[0])} />
-                            </label>
-                          )}
-                        </div>
+                        {req.file_url ? (
+                          <a href={req.file_url} target="_blank" rel="noreferrer"
+                            className="text-blue-500 hover:text-blue-700 flex items-center gap-1 text-xs">
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                        ) : (
+                          <span className="text-gray-300 text-xs">None</span>
+                        )}
+                      </td>
+                      {/* HR Attachments summary */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <button
+                          onClick={() => { setViewingReq(req); }}
+                          className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-semibold"
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          {hrAtts.length > 0 ? `${hrAtts.length} file${hrAtts.length > 1 ? "s" : ""}` : "Add"}
+                        </button>
+                        {req.subject === "NTE Request" && !hasNOD(req) && (
+                          <div className="text-xs text-orange-500 mt-0.5">NOD missing</div>
+                        )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {isEditing ? (

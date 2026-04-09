@@ -19,6 +19,10 @@
         "Resource Request",
         "General Announcement Request",
         "WFH Request",
+        "COE (Certificate of Employment)",
+        "ITR (Income Tax Return)",
+        "LAST PAY",
+        "ATD (Authority to Deduct)",
         "Others"
       ]
     },
@@ -39,8 +43,78 @@
     "email_address": {
       "type": "string"
     },
+    "department": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "tin": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "bday": {
+      "type": "string"
+    },
+    "employment_date": {
+      "type": "string"
+    },
+    "compensation_summary": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "string"
+    },
+    "reason_of_atd": {
+      "type": "string"
+    },
     "file_url": {
       "type": "string"
+    },
+    "hr_attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "uploaded_at": {
+            "type": "string"
+          },
+          "uploaded_by": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        }
+      }
     },
     "completion_file_url": {
       "type": "string"
@@ -78,7 +152,6 @@
   "required": [
     "branch",
     "subject",
-    "details",
     "requested_by",
     "email_address"
   ]
