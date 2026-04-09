@@ -134,7 +134,6 @@ export default function HRTracker() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Refresh viewingReq after attachment upload
   const handleUpdated = async () => {
     await fetchData();
     if (viewingReq) {
@@ -149,12 +148,10 @@ export default function HRTracker() {
   };
 
   const saveEdit = async (req) => {
-    // Block completing NTE without NOD
     if (editData.status === "Completed" && req.subject === "NTE Request" && !hasNOD({ ...req, ...editData })) {
       alert("Cannot complete NTE Request without a NOD attachment. Please upload the NOD first.");
       return;
     }
-    // Block completing other subjects without proof of completion
     if (editData.status === "Completed" && req.subject !== "NTE Request") {
       const atts = Array.isArray(req.hr_attachments) ? req.hr_attachments : [];
       const hasProof = atts.some(a => a.type === "Proof of Completion");
@@ -198,11 +195,24 @@ export default function HRTracker() {
     valid: requests.filter(r => r.breach_status === "Valid").length,
   };
 
+  if (user?.role === "anonymous") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <ClipboardList className="w-10 h-10 text-red-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-3">Access Restricted</h2>
+        <p className="text-gray-500 max-w-md">Your account is pending approval. Please contact an Admin to grant you access to the HR Tracker.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {showWelcome && (
         <WelcomeScreen user={user} onDismiss={() => { sessionStorage.setItem("hr_welcomed", "1"); setShowWelcome(false); }} />
       )}
+
       {viewingReq && (
         <DetailsModal
           req={viewingReq}
@@ -320,7 +330,6 @@ export default function HRTracker() {
                           {req.breach_status || "Pending"}
                         </span>
                       </td>
-                      {/* Form Attachment - from requester */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {req.file_url ? (
                           <a href={req.file_url} target="_blank" rel="noreferrer"
@@ -331,7 +340,6 @@ export default function HRTracker() {
                           <span className="text-gray-300 text-xs">None</span>
                         )}
                       </td>
-                      {/* HR Attachments summary */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <button
                           onClick={() => { setViewingReq(req); }}

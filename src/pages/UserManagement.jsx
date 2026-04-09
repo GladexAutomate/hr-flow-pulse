@@ -130,14 +130,17 @@ export default function UserManagement() {
                   <td className="px-5 py-3 text-gray-500">{user.email}</td>
                   <td className="px-5 py-3">
                     <select
-                      value={user.role || "user"}
+                      value={user.role || "anonymous"}
                       onChange={e => handleRoleChange(user.id, e.target.value)}
                       className={`text-xs font-semibold px-3 py-1 rounded-lg border focus:outline-none ${
                         user.role === "admin"
                           ? "bg-orange-50 text-orange-700 border-orange-200"
+                          : user.role === "anonymous"
+                          ? "bg-red-50 text-red-600 border-red-200"
                           : "bg-blue-50 text-blue-700 border-blue-200"
                       }`}
                     >
+                      <option value="anonymous">Anonymous</option>
                       <option value="user">HR Staff</option>
                       <option value="admin">Admin</option>
                     </select>
