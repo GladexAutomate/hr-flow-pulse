@@ -22,6 +22,14 @@
         "Others"
       ]
     },
+    "resource_type": {
+      "type": "string",
+      "enum": [
+        "Rank and File",
+        "Supervisory",
+        "Managerial"
+      ]
+    },
     "details": {
       "type": "string"
     },
@@ -34,12 +42,16 @@
     "file_url": {
       "type": "string"
     },
+    "completion_file_url": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
         "Pending",
         "In Progress",
-        "Completed"
+        "Completed",
+        "Waived/Cancelled"
       ],
       "default": "Pending"
     },
