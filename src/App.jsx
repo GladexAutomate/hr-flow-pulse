@@ -38,7 +38,6 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      <Route path="/request-form" element={<RequestForm />} />
       <Route element={<Layout />}>
         <Route path="/" element={<HRTracker />} />
         <Route path="/reports" element={<Reports />} />
