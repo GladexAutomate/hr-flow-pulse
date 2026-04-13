@@ -150,9 +150,20 @@
     }
   },
   "required": [
-    "branch",
     "subject",
     "requested_by",
     "email_address"
-  ]
+  ],
+  "rls": {
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "user"
+      }
+    }
+  }
 }
