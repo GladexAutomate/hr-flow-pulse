@@ -79,6 +79,7 @@ export default function RequestForm() {
   const [file, setFile] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -91,28 +92,34 @@ export default function RequestForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    let file_url = "";
-    if (file) {
-      const res = await base44.integrations.Core.UploadFile({ file });
-      file_url = res.file_url;
+    setError("");
+    try {
+      let file_url = "";
+      if (file) {
+        const res = await base44.integrations.Core.UploadFile({ file });
+        file_url = res.file_url;
+      }
+      const sla_days = getSLA(subject, form.resource_type);
+      await base44.entities.HRRequest.create({
+        subject,
+        ...form,
+        file_url,
+        status: "Pending",
+        sla_days,
+        breach_status: "Pending",
+        timeline: [{
+          timestamp: new Date().toISOString(),
+          action: "Request Submitted",
+          user: form.email_address || "Requester",
+          details: `Subject: ${subject}`,
+        }],
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError("Submission failed: " + (err?.message || "Please try again."));
+    } finally {
+      setLoading(false);
     }
-    const sla_days = getSLA(subject, form.resource_type);
-    await base44.entities.HRRequest.create({
-      subject,
-      ...form,
-      file_url,
-      status: "Pending",
-      sla_days,
-      breach_status: "Pending",
-      timeline: [{
-        timestamp: new Date().toISOString(),
-        action: "Request Submitted",
-        user: form.email_address || "Requester",
-        details: `Subject: ${subject}`,
-      }],
-    });
-    setLoading(false);
-    setSubmitted(true);
   };
 
   const showBranch = !["ATD (Authority to Deduct)"].includes(subject);
@@ -293,6 +300,12 @@ export default function RequestForm() {
               >
                 {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Submitting...</> : "Submit Request"}
               </button>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mt-3">
+                  {error}
+                </div>
+              )}
             </>
           )}
         </form>
