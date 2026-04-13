@@ -100,7 +100,7 @@ export default function RequestForm() {
         file_url = res.file_url;
       }
       const sla_days = getSLA(subject, form.resource_type);
-      await base44.entities.HRRequest.create({
+      await base44.functions.invoke('submitHRRequest', {
         subject,
         ...form,
         file_url,

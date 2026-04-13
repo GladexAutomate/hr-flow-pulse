@@ -155,9 +155,7 @@
     "email_address"
   ],
   "rls": {
-    "create": {
-      "allow_public": true
-    },
+    "create": true,
     "delete": {
       "user_condition": {
         "role": "admin"
