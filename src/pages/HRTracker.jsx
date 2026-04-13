@@ -160,6 +160,12 @@ export default function HRTracker() {
         return;
       }
     }
+    // Auto-fill dates when completing
+    const today = new Date().toISOString().split("T")[0];
+    if (editData.status === "Completed") {
+      if (!editData.date_started && !req.date_started) editData.date_started = today;
+      if (!editData.date_completed) editData.date_completed = today;
+    }
     const breach_status = computeBreach({ ...req, ...editData });
     const newTimeline = [
       ...(Array.isArray(req.timeline) ? req.timeline : []),
