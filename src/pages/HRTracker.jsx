@@ -353,8 +353,17 @@ function HRTrackerList() {
           </div>
         ) : (
           <>
-            {/* Top scrollbar mirror */}
-            <div className="overflow-x-auto" style={{ overflowY: "hidden", height: 12 }}
+            <table className="w-full text-sm">
+              <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white">
+                <tr>
+                  {["Date Submitted", "Branch", "Subject", "Requested By", "SLA", "Status", "Date Started", "Date Completed", "Breach", "Form Attachment", "HR Attachments", "Actions"].map(h => (
+                    <th key={h} className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+            </table>
+            {/* Scrollbar below headers */}
+            <div className="overflow-x-auto" style={{ overflowY: "hidden", height: 12, borderBottom: "1px solid #f3f4f6" }}
               ref={el => {
                 if (!el) return;
                 el._mirrorTarget = el.nextSibling;
@@ -364,27 +373,20 @@ function HRTrackerList() {
               <div style={{ width: "max-content", minWidth: "100%", height: 1 }} ref={el => {
                 if (!el) return;
                 const syncWidth = () => {
-                  const table = el.closest(".table-scroll-container")?.querySelector("table");
-                  if (table) el.style.width = table.scrollWidth + "px";
+                  const tbody = el.closest(".table-container")?.querySelector("tbody");
+                  if (tbody?.parentElement) el.style.width = tbody.parentElement.scrollWidth + "px";
                 };
                 syncWidth();
                 const observer = new ResizeObserver(syncWidth);
                 observer.observe(document.body);
               }} />
             </div>
-            <div className="overflow-x-auto table-scroll-container" ref={el => {
+            <div className="overflow-x-auto table-container" ref={el => {
               if (!el) return;
               el._mirrorSource = el.previousSibling;
               el.onscroll = () => { if (el._mirrorSource) el._mirrorSource.scrollLeft = el.scrollLeft; };
             }}>
             <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white">
-                <tr>
-                  {["Date Submitted", "Branch", "Subject", "Requested By", "SLA", "Status", "Date Started", "Date Completed", "Breach", "Form Attachment", "HR Attachments", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginated.map((req, i) => {
                   const isEditing = editingId === req.id;
