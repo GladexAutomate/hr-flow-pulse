@@ -146,18 +146,18 @@ export default function RequestForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-start sm:items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-xl">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 bg-white rounded-2xl px-6 py-3 shadow-md mb-6">
-            <ClipboardList className="w-6 h-6 text-orange-500" />
-            <span className="font-bold text-blue-800 text-lg">HR Hub</span>
+        <div className="text-center mb-6 sm:mb-10">
+          <div className="inline-flex items-center gap-3 bg-white rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 shadow-md mb-4 sm:mb-6">
+            <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+            <span className="font-bold text-blue-800 text-base sm:text-lg">HR Hub</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-800 mb-2">HR Request Form</h1>
-          <p className="text-gray-500">Fill out the form below and our HR team will get back to you.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-2">HR Request Form</h1>
+          <p className="text-gray-500 text-sm sm:text-base">Fill out the form below and our HR team will get back to you.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 space-y-4 sm:space-y-6">
 
           {/* Subject — always visible first */}
           <div>

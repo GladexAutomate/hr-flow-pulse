@@ -99,7 +99,7 @@ function filterByDateRange(requests, viewMode, year, startDate, endDate) {
 
 function SummaryCards({ reqs }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
       {[
         { label: "Total Requests", value: reqs.length, icon: TrendingUp, color: "from-blue-500 to-blue-700" },
         { label: "Valid (On Time)", value: reqs.filter(r => r.breach_status === "Valid").length, icon: CheckCircle, color: "from-emerald-500 to-emerald-700" },
@@ -161,7 +161,7 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start sm:items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-800">Reports & Analytics</h1>
           <p className="text-gray-500 text-sm mt-1">SLA compliance overview by request type and date range</p>
@@ -175,7 +175,7 @@ export default function Reports() {
       </div>
 
       {/* View Mode Selector */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-4 flex flex-wrap items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-orange-500" />
           <span className="text-sm font-semibold text-gray-700">View:</span>
@@ -183,7 +183,7 @@ export default function Reports() {
         <div className="flex gap-2 flex-wrap">
           {VIEW_MODES.map(m => (
             <button key={m} onClick={() => setViewMode(m)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                 viewMode === m
                   ? "bg-orange-500 text-white shadow-md"
                   : "bg-gray-100 text-gray-600 hover:bg-orange-100 hover:text-orange-600"
@@ -193,16 +193,16 @@ export default function Reports() {
           ))}
         </div>
         {viewMode !== "Monthly" && (
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">From:</span>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                className="border border-gray-200 rounded-xl px-2 sm:px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 w-full sm:w-auto" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">To:</span>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                className="border border-gray-200 rounded-xl px-2 sm:px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 w-full sm:w-auto" />
             </div>
           </div>
         )}
@@ -280,8 +280,9 @@ export default function Reports() {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden -mx-3 sm:mx-0">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white">
             <tr>
               {["Period", "Total", "Valid", "Breached", "Pending", "Compliance Rate"].map(h => (
@@ -318,6 +319,7 @@ export default function Reports() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

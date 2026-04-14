@@ -54,9 +54,9 @@ function hasNOD(req) {
 function DetailsModal({ req, onClose, onUpdated, user }) {
   const [tab, setTab] = useState("details");
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100">
           <div className="flex gap-2">
             {["details", "attachments", "timeline"].map(t => (
               <button key={t} onClick={() => setTab(t)}
@@ -68,7 +68,7 @@ function DetailsModal({ req, onClose, onUpdated, user }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="overflow-y-auto p-5 flex-1">
+        <div className="overflow-y-auto p-4 sm:p-5 flex-1">
           {tab === "details" && (
             <div className="space-y-3 text-sm">
               <div><span className="font-semibold text-gray-600">Branch:</span> <span className="text-gray-800">{req.branch || "—"}</span></div>
@@ -229,7 +229,7 @@ export default function HRTracker() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 sm:gap-4">
         {[
           { label: "Total", value: stats.total, color: "from-blue-500 to-blue-600" },
           { label: "Pending", value: stats.pending, color: "from-yellow-400 to-yellow-500" },
@@ -247,25 +247,27 @@ export default function HRTracker() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name, subject, branch..."
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
-          {["All", "Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
-          {branches.map(b => <option key={b}>{b}</option>)}
-        </select>
+        <div className="flex gap-2 flex-wrap">
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            className="flex-1 min-w-[120px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
+            {["All", "Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)}
+            className="flex-1 min-w-[120px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
+            {branches.map(b => <option key={b}>{b}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden -mx-3 sm:mx-0">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
