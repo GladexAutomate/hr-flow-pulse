@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import WelcomeScreen from "../components/WelcomeScreen";
 import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
 import RecordTimeline from "../components/RecordTimeline";
@@ -8,7 +8,7 @@ import MobileRequestCard from "../components/MobileRequestCard";
 import PullToRefresh from "../components/PullToRefresh";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
-import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip, ArrowLeft } from "lucide-react";
+import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -119,33 +119,6 @@ function DetailsModal({ req, onClose, onUpdated, user }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <DetailsContent req={req} onClose={onClose} onUpdated={onUpdated} user={user} />
-    </div>
-  );
-}
-
-function RequestDetailPage({ requests, onUpdated, user }) {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const req = requests.find(r => r.id === id);
-
-  if (!req) return (
-    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-      <p>Request not found.</p>
-      <button onClick={() => navigate("/")} className="mt-3 text-blue-500 text-sm">← Back to Tracker</button>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="flex items-center gap-3 p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="font-bold text-gray-800 text-base truncate">{req.requested_by}</h2>
-      </div>
-      <div className="p-4">
-        <DetailsContent req={req} onClose={() => navigate(-1)} onUpdated={onUpdated} user={user} />
-      </div>
     </div>
   );
 }
