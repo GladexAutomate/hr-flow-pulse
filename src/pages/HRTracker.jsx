@@ -4,9 +4,13 @@ import WelcomeScreen from "../components/WelcomeScreen";
 import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
 import RecordTimeline from "../components/RecordTimeline";
 import MobileRequestCard from "../components/MobileRequestCard";
+import PullToRefresh from "../components/PullToRefresh";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_COLORS = {
   "Pending": "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -256,43 +260,59 @@ export default function HRTracker() {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-            className="flex-1 min-w-[120px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
-            {["All", "Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => <option key={s}>{s}</option>)}
-          </select>
-          <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)}
-            className="flex-1 min-w-[120px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400">
-            {branches.map(b => <option key={b}>{b}</option>)}
-          </select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="flex-1 min-w-[120px] bg-gray-50 border-gray-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["All", "Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterBranch} onValueChange={setFilterBranch}>
+            <SelectTrigger className="flex-1 min-w-[120px] bg-gray-50 border-gray-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {branches.map(b => (
+                <SelectItem key={b} value={b}>{b}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Mobile card list (< md) */}
-      <div className="md:hidden space-y-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      <div className="md:hidden">
+        <PullToRefresh onRefresh={fetchData}>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No requests found.</p>
+              </div>
+            ) : filtered.map(req => (
+              <MobileRequestCard
+                key={req.id}
+                req={req}
+                sla={getSLA(req)}
+                isEditing={editingId === req.id}
+                editData={editData}
+                setEditData={setEditData}
+                onView={() => setViewingReq(req)}
+                onStartEdit={() => startEdit(req)}
+                onSaveEdit={() => saveEdit(req)}
+                onCancelEdit={() => setEditingId(null)}
+                hasNOD={hasNOD}
+              />
+            ))}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No requests found.</p>
-          </div>
-        ) : filtered.map(req => (
-          <MobileRequestCard
-            key={req.id}
-            req={req}
-            sla={getSLA(req)}
-            isEditing={editingId === req.id}
-            editData={editData}
-            setEditData={setEditData}
-            onView={() => setViewingReq(req)}
-            onStartEdit={() => startEdit(req)}
-            onSaveEdit={() => saveEdit(req)}
-            onCancelEdit={() => setEditingId(null)}
-            hasNOD={hasNOD}
-          />
-        ))}
+        </PullToRefresh>
       </div>
 
       {/* Desktop table (>= md) */}

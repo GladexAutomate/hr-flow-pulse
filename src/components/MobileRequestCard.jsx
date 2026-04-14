@@ -30,20 +30,20 @@ export default function MobileRequestCard({
         <div className="flex gap-1 flex-shrink-0">
           {isEditing ? (
             <>
-              <button onClick={onSaveEdit} className="bg-green-500 hover:bg-green-600 text-white rounded-lg p-1.5">
-                <Save className="w-3.5 h-3.5" />
+              <button onClick={onSaveEdit} className="bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center" style={{ minWidth: 44, minHeight: 44 }}>
+                <Save className="w-4 h-4" />
               </button>
-              <button onClick={onCancelEdit} className="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg p-1.5">
-                <X className="w-3.5 h-3.5" />
+              <button onClick={onCancelEdit} className="bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl flex items-center justify-center" style={{ minWidth: 44, minHeight: 44 }}>
+                <X className="w-4 h-4" />
               </button>
             </>
           ) : (
             <>
-              <button onClick={onView} className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg p-1.5">
-                <Eye className="w-3.5 h-3.5" />
+              <button onClick={onView} className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-xl flex items-center justify-center" style={{ minWidth: 44, minHeight: 44 }}>
+                <Eye className="w-4 h-4" />
               </button>
-              <button onClick={onStartEdit} className="bg-orange-100 hover:bg-orange-200 text-orange-600 rounded-lg p-1.5">
-                <Edit3 className="w-3.5 h-3.5" />
+              <button onClick={onStartEdit} className="bg-orange-100 hover:bg-orange-200 text-orange-600 rounded-xl flex items-center justify-center" style={{ minWidth: 44, minHeight: 44 }}>
+                <Edit3 className="w-4 h-4" />
               </button>
             </>
           )}
