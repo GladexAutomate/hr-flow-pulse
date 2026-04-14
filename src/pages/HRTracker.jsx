@@ -204,6 +204,9 @@ function HRTrackerList() {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
+
   const branches = ["All", ...new Set(requests.map(r => r.branch).filter(Boolean))];
   const filtered = requests.filter(r => {
     const matchSearch = r.requested_by?.toLowerCase().includes(search.toLowerCase()) ||
@@ -213,6 +216,9 @@ function HRTrackerList() {
     const matchBranch = filterBranch === "All" || r.branch === filterBranch;
     return matchSearch && matchStatus && matchBranch;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const stats = {
     total: requests.length,
@@ -273,12 +279,13 @@ function HRTrackerList() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
+          <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search by name, subject, branch..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50"
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setCurrentPage(1); }}>
             <SelectTrigger className="flex-1 min-w-[120px] bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
@@ -288,7 +295,7 @@ function HRTrackerList() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterBranch} onValueChange={setFilterBranch}>
+          <Select value={filterBranch} onValueChange={v => { setFilterBranch(v); setCurrentPage(1); }}>
             <SelectTrigger className="flex-1 min-w-[120px] bg-gray-50 border-gray-200">
               <SelectValue />
             </SelectTrigger>
@@ -345,7 +352,31 @@ function HRTrackerList() {
             <p>No requests found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Top scrollbar mirror */}
+            <div className="overflow-x-auto" style={{ overflowY: "hidden", height: 12 }}
+              ref={el => {
+                if (!el) return;
+                el._mirrorTarget = el.nextSibling;
+                el.onscroll = () => { if (el._mirrorTarget) el._mirrorTarget.scrollLeft = el.scrollLeft; };
+              }}
+            >
+              <div style={{ width: "max-content", minWidth: "100%", height: 1 }} ref={el => {
+                if (!el) return;
+                const syncWidth = () => {
+                  const table = el.closest(".table-scroll-container")?.querySelector("table");
+                  if (table) el.style.width = table.scrollWidth + "px";
+                };
+                syncWidth();
+                const observer = new ResizeObserver(syncWidth);
+                observer.observe(document.body);
+              }} />
+            </div>
+            <div className="overflow-x-auto table-scroll-container" ref={el => {
+              if (!el) return;
+              el._mirrorSource = el.previousSibling;
+              el.onscroll = () => { if (el._mirrorSource) el._mirrorSource.scrollLeft = el.scrollLeft; };
+            }}>
             <table className="w-full text-sm">
               <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white">
                 <tr>
@@ -355,7 +386,7 @@ function HRTrackerList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filtered.map((req, i) => {
+                {paginated.map((req, i) => {
                   const isEditing = editingId === req.id;
                   const sla = getSLA(req);
                   const hrAtts = Array.isArray(req.hr_attachments) ? req.hr_attachments : [];
@@ -463,7 +494,34 @@ function HRTrackerList() {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                <span className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} records
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                  >← Prev</button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button key={p} onClick={() => setCurrentPage(p)}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${p === currentPage ? "bg-blue-800 text-white border-blue-800" : "border-gray-200 hover:bg-gray-50"}`}>
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
+                  >Next →</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
