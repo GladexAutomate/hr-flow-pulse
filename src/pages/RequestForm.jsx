@@ -97,16 +97,23 @@ export default function RequestForm() {
     setLoading(true);
     setError("");
     try {
-      let file_url = "";
+      let file_base64 = null;
+      let file_name = null;
       if (file) {
-        const res = await base44.integrations.Core.UploadFile({ file });
-        file_url = res.file_url;
+        file_base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        file_name = file.name;
       }
       const sla_days = getSLA(subject, form.resource_type);
       await base44.functions.invoke('submitHRRequest', {
         subject,
         ...form,
-        file_url,
+        file_base64,
+        file_name,
         status: "Pending",
         sla_days,
         breach_status: "Pending",
