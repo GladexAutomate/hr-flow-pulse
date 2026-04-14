@@ -13,8 +13,11 @@ export default function PullToRefresh({ onRefresh, children }) {
     const el = containerRef.current;
     if (!el) return;
 
+    const getMainScroll = () => document.querySelector("main") || el;
+
     const onTouchStart = (e) => {
-      if (el.scrollTop === 0) {
+      const scrollEl = getMainScroll();
+      if (scrollEl.scrollTop === 0) {
         startY.current = e.touches[0].clientY;
       }
     };
@@ -22,7 +25,8 @@ export default function PullToRefresh({ onRefresh, children }) {
     const onTouchMove = (e) => {
       if (startY.current === null) return;
       const dy = e.touches[0].clientY - startY.current;
-      if (dy > 0 && el.scrollTop === 0) {
+      const scrollEl = getMainScroll();
+      if (dy > 0 && scrollEl.scrollTop === 0) {
         e.preventDefault();
         setPullDistance(Math.min(dy, THRESHOLD * 1.5));
       }
@@ -54,7 +58,7 @@ export default function PullToRefresh({ onRefresh, children }) {
   const showIndicator = pullDistance > 0 || refreshing;
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto">
+    <div ref={containerRef}>
       {showIndicator && (
         <div
           className="flex items-center justify-center transition-all"
