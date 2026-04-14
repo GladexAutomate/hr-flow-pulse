@@ -1,12 +1,14 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { ClipboardList, BarChart2, Users } from "lucide-react";
+import { ClipboardList, BarChart2, Users, Settings } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { useRef } from "react";
 
 const NAV_LINKS = [
   { to: "/", label: "Tracker", icon: ClipboardList },
   { to: "/reports", label: "Reports", icon: BarChart2 },
   { to: "/users", label: "Users", icon: Users },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 function Sidebar() {

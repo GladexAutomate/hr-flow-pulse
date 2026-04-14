@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
+import { useNavigate, useParams } from "react-router-dom";
 import WelcomeScreen from "../components/WelcomeScreen";
 import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
 import RecordTimeline from "../components/RecordTimeline";
@@ -7,7 +8,7 @@ import MobileRequestCard from "../components/MobileRequestCard";
 import PullToRefresh from "../components/PullToRefresh";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
-import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
+import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip, ArrowLeft } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -56,70 +57,102 @@ function hasNOD(req) {
   return atts.some(a => a.type === "NOD");
 }
 
-function DetailsModal({ req, onClose, onUpdated, user }) {
+function DetailsContent({ req, onClose, onUpdated, user }) {
   const [tab, setTab] = useState("details");
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100">
-          <div className="flex gap-2">
-            {["details", "attachments", "timeline"].map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${tab === t ? "bg-blue-800 text-white" : "text-gray-500 hover:bg-gray-100"}`}>
-                {t}
-              </button>
-            ))}
+    <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100">
+        <div className="flex gap-2">
+          {["details", "attachments", "timeline"].map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${tab === t ? "bg-blue-800 text-white" : "text-gray-500 hover:bg-gray-100"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+      </div>
+
+      <div className="overflow-y-auto p-4 sm:p-5 flex-1">
+        {tab === "details" && (
+          <div className="space-y-3 text-sm">
+            <div><span className="font-semibold text-gray-600">Branch:</span> <span className="text-gray-800">{req.branch || "—"}</span></div>
+            <div><span className="font-semibold text-gray-600">Subject:</span> <span className="text-gray-800">{req.subject}</span></div>
+            {req.resource_type && <div><span className="font-semibold text-gray-600">Resource Type:</span> <span className="text-gray-800">{req.resource_type}</span></div>}
+            <div><span className="font-semibold text-gray-600">Requested By:</span> <span className="text-gray-800">{req.requested_by}</span></div>
+            <div><span className="font-semibold text-gray-600">Email:</span> <span className="text-gray-800">{req.email_address}</span></div>
+            {req.department && <div><span className="font-semibold text-gray-600">Department:</span> <span className="text-gray-800">{req.department}</span></div>}
+            {req.purpose && <div><span className="font-semibold text-gray-600">Purpose:</span> <span className="text-gray-800">{req.purpose}</span></div>}
+            {req.tin && <div><span className="font-semibold text-gray-600">TIN:</span> <span className="text-gray-800">{req.tin}</span></div>}
+            {req.address && <div><span className="font-semibold text-gray-600">Address:</span> <span className="text-gray-800">{req.address}</span></div>}
+            {req.bday && <div><span className="font-semibold text-gray-600">Birthday:</span> <span className="text-gray-800">{req.bday}</span></div>}
+            {req.employment_date && <div><span className="font-semibold text-gray-600">Employment Date:</span> <span className="text-gray-800">{req.employment_date}</span></div>}
+            {req.compensation_summary && <div><span className="font-semibold text-gray-600">Compensation Summary:</span> <span className="text-gray-800">{req.compensation_summary}</span></div>}
+            {req.amount && <div><span className="font-semibold text-gray-600">Amount:</span> <span className="text-gray-800">{req.amount}</span></div>}
+            {req.reason_of_atd && <div><span className="font-semibold text-gray-600">Reason of ATD:</span> <span className="text-gray-800">{req.reason_of_atd}</span></div>}
+            {req.details && (
+              <div>
+                <span className="font-semibold text-gray-600">Details:</span>
+                <p className="mt-1 text-gray-700 bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{req.details}</p>
+              </div>
+            )}
+            {req.file_url && (
+              <div>
+                <span className="font-semibold text-gray-600">Form Attachment:</span>{" "}
+                <a href={req.file_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">View File</a>
+              </div>
+            )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-        </div>
-
-        <div className="overflow-y-auto p-4 sm:p-5 flex-1">
-          {tab === "details" && (
-            <div className="space-y-3 text-sm">
-              <div><span className="font-semibold text-gray-600">Branch:</span> <span className="text-gray-800">{req.branch || "—"}</span></div>
-              <div><span className="font-semibold text-gray-600">Subject:</span> <span className="text-gray-800">{req.subject}</span></div>
-              {req.resource_type && <div><span className="font-semibold text-gray-600">Resource Type:</span> <span className="text-gray-800">{req.resource_type}</span></div>}
-              <div><span className="font-semibold text-gray-600">Requested By:</span> <span className="text-gray-800">{req.requested_by}</span></div>
-              <div><span className="font-semibold text-gray-600">Email:</span> <span className="text-gray-800">{req.email_address}</span></div>
-              {req.department && <div><span className="font-semibold text-gray-600">Department:</span> <span className="text-gray-800">{req.department}</span></div>}
-              {req.purpose && <div><span className="font-semibold text-gray-600">Purpose:</span> <span className="text-gray-800">{req.purpose}</span></div>}
-              {req.tin && <div><span className="font-semibold text-gray-600">TIN:</span> <span className="text-gray-800">{req.tin}</span></div>}
-              {req.address && <div><span className="font-semibold text-gray-600">Address:</span> <span className="text-gray-800">{req.address}</span></div>}
-              {req.bday && <div><span className="font-semibold text-gray-600">Birthday:</span> <span className="text-gray-800">{req.bday}</span></div>}
-              {req.employment_date && <div><span className="font-semibold text-gray-600">Employment Date:</span> <span className="text-gray-800">{req.employment_date}</span></div>}
-              {req.compensation_summary && <div><span className="font-semibold text-gray-600">Compensation Summary:</span> <span className="text-gray-800">{req.compensation_summary}</span></div>}
-              {req.amount && <div><span className="font-semibold text-gray-600">Amount:</span> <span className="text-gray-800">{req.amount}</span></div>}
-              {req.reason_of_atd && <div><span className="font-semibold text-gray-600">Reason of ATD:</span> <span className="text-gray-800">{req.reason_of_atd}</span></div>}
-              {req.details && (
-                <div>
-                  <span className="font-semibold text-gray-600">Details:</span>
-                  <p className="mt-1 text-gray-700 bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{req.details}</p>
-                </div>
-              )}
-              {req.file_url && (
-                <div>
-                  <span className="font-semibold text-gray-600">Form Attachment:</span>{" "}
-                  <a href={req.file_url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">View File</a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {tab === "attachments" && (
-            <HRAttachmentsPanel req={req} onUpdated={onUpdated} currentUser={user} />
-          )}
-
-          {tab === "timeline" && (
-            <RecordTimeline timeline={req.timeline} />
-          )}
-        </div>
+        )}
+        {tab === "attachments" && (
+          <HRAttachmentsPanel req={req} onUpdated={onUpdated} currentUser={user} />
+        )}
+        {tab === "timeline" && (
+          <RecordTimeline timeline={req.timeline} />
+        )}
       </div>
     </div>
   );
 }
 
-export default function HRTracker() {
+function DetailsModal({ req, onClose, onUpdated, user }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <DetailsContent req={req} onClose={onClose} onUpdated={onUpdated} user={user} />
+    </div>
+  );
+}
+
+function RequestDetailPage({ requests, onUpdated, user }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const req = requests.find(r => r.id === id);
+
+  if (!req) return (
+    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+      <p>Request not found.</p>
+      <button onClick={() => navigate("/")} className="mt-3 text-blue-500 text-sm">← Back to Tracker</button>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="flex items-center gap-3 p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <h2 className="font-bold text-gray-800 text-base truncate">{req.requested_by}</h2>
+      </div>
+      <div className="p-4">
+        <DetailsContent req={req} onClose={() => navigate(-1)} onUpdated={onUpdated} user={user} />
+      </div>
+    </div>
+  );
+}
+
+function HRTrackerList() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem("hr_welcomed"));
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,9 +214,21 @@ export default function HRTracker() {
         details: `Status changed to: ${editData.status}${editData.date_started ? ` | Date Started: ${editData.date_started}` : ""}${editData.date_completed ? ` | Date Completed: ${editData.date_completed}` : ""}`,
       },
     ];
-    await base44.entities.HRRequest.update(req.id, { ...editData, breach_status, timeline: newTimeline });
+    // Optimistic update
+    const optimisticUpdate = { ...editData, breach_status };
+    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, ...optimisticUpdate } : r));
     setEditingId(null);
+    await base44.entities.HRRequest.update(req.id, { ...editData, breach_status, timeline: newTimeline });
     fetchData();
+  };
+
+  const viewReq = (req) => {
+    // On mobile use sub-route; on desktop use modal
+    if (window.innerWidth < 768) {
+      navigate(`/request/${req.id}`);
+    } else {
+      setViewingReq(req);
+    }
   };
 
   const branches = ["All", ...new Set(requests.map(r => r.branch).filter(Boolean))];
@@ -219,18 +264,18 @@ export default function HRTracker() {
   }
 
   return (
+    <>
+    {viewingReq && (
+      <DetailsModal
+        req={viewingReq}
+        onClose={() => { setViewingReq(null); fetchData(); }}
+        onUpdated={handleUpdated}
+        user={user}
+      />
+    )}
     <div className="space-y-6">
       {showWelcome && (
         <WelcomeScreen user={user} onDismiss={() => { sessionStorage.setItem("hr_welcomed", "1"); setShowWelcome(false); }} />
-      )}
-
-      {viewingReq && (
-        <DetailsModal
-          req={viewingReq}
-          onClose={() => { setViewingReq(null); fetchData(); }}
-          onUpdated={handleUpdated}
-          user={user}
-        />
       )}
 
       {/* Stats */}
@@ -304,7 +349,7 @@ export default function HRTracker() {
                 isEditing={editingId === req.id}
                 editData={editData}
                 setEditData={setEditData}
-                onView={() => setViewingReq(req)}
+                onView={() => viewReq(req)}
                 onStartEdit={() => startEdit(req)}
                 onSaveEdit={() => saveEdit(req)}
                 onCancelEdit={() => setEditingId(null)}
@@ -358,10 +403,16 @@ export default function HRTracker() {
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{sla}d</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {isEditing ? (
-                          <select value={editData.status} onChange={e => setEditData({ ...editData, status: e.target.value })}
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs">
-                            {["Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => <option key={s}>{s}</option>)}
-                          </select>
+                          <Select value={editData.status} onValueChange={val => setEditData({ ...editData, status: val })}>
+                            <SelectTrigger className="border-gray-200 rounded-lg text-xs h-8 w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         ) : (
                           <span className={`px-2 py-1 rounded-lg border text-xs font-semibold ${STATUS_COLORS[req.status]}`}>{req.status}</span>
                         )}
@@ -399,7 +450,7 @@ export default function HRTracker() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <button
-                          onClick={() => { setViewingReq(req); }}
+                          onClick={() => viewReq(req)}
                           className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-semibold"
                         >
                           <Paperclip className="w-3 h-3" />
@@ -423,7 +474,7 @@ export default function HRTracker() {
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            <button onClick={() => setViewingReq(req)}
+                            <button onClick={() => viewReq(req)}
                               className="bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg p-1.5 transition-all" title="View Details">
                               <Eye className="w-3.5 h-3.5" />
                             </button>
@@ -443,5 +494,8 @@ export default function HRTracker() {
         )}
       </div>
     </div>
+    </>
   );
 }
+
+export default HRTrackerList;

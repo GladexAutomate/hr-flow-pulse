@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { CheckCircle, Upload, Loader2, ClipboardList } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const BRANCHES = ["Gladex Main", "POTB", "Robinsons Manila", "SM Manila", "Klikk"];
 
@@ -59,16 +62,16 @@ function SelectField({ label, name, value, onChange, required, options }) {
       <label className="block text-sm font-semibold text-gray-700 mb-2">
         {label} {required && <span className="text-orange-500">*</span>}
       </label>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50"
-      >
-        <option value="">Select {label.toLowerCase()}...</option>
-        {options.map(o => <option key={o.value || o} value={o.value || o}>{o.label || o}</option>)}
-      </select>
+      <Select value={value} onValueChange={val => onChange({ target: { name, value: val } })} required={required}>
+        <SelectTrigger className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 h-auto text-gray-700">
+          <SelectValue placeholder={`Select ${label.toLowerCase()}...`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(o => (
+            <SelectItem key={o.value || o} value={o.value || o}>{o.label || o}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -164,15 +167,14 @@ export default function RequestForm() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Subject <span className="text-orange-500">*</span>
             </label>
-            <select
-              value={subject}
-              onChange={handleSubjectChange}
-              required
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50"
-            >
-              <option value="">Select subject...</option>
-              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <Select value={subject} onValueChange={val => handleSubjectChange({ target: { value: val } })}>
+              <SelectTrigger className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 h-auto text-gray-700">
+                <SelectValue placeholder="Select subject..." />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Dynamic fields based on subject */}

@@ -1,5 +1,8 @@
 import { format } from "date-fns";
 import { Eye, Edit3, Save, X, Paperclip, ExternalLink } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_COLORS = {
   "Pending": "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -60,10 +63,16 @@ export default function MobileRequestCard({
       {/* Status row */}
       <div className="flex flex-wrap gap-2 items-center">
         {isEditing ? (
-          <select value={editData.status} onChange={e => setEditData({ ...editData, status: e.target.value })}
-            className="border border-gray-200 rounded-lg px-2 py-1 text-xs flex-1">
-            {["Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => <option key={s}>{s}</option>)}
-          </select>
+          <Select value={editData.status} onValueChange={val => setEditData({ ...editData, status: val })}>
+            <SelectTrigger className="border-gray-200 rounded-lg text-xs flex-1 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["Pending", "In Progress", "Completed", "Waived/Cancelled"].map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <span className={`px-2 py-1 rounded-lg border text-xs font-semibold ${STATUS_COLORS[req.status]}`}>{req.status}</span>
         )}

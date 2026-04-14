@@ -12,6 +12,8 @@ import HRTracker from './pages/HRTracker';
 import Reports from './pages/Reports';
 import RequestForm from './pages/RequestForm';
 import UserManagement from './pages/UserManagement';
+import Settings from './pages/Settings';
+import RequestDetail from './pages/RequestDetail';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -56,6 +58,16 @@ const AuthenticatedApp = () => {
           <Route path="/users" element={
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
               <UserManagement />
+            </motion.div>
+          } />
+          <Route path="/settings" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <Settings />
+            </motion.div>
+          } />
+          <Route path="/request/:id" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <RequestDetail />
             </motion.div>
           } />
         </Route>
