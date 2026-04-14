@@ -363,7 +363,7 @@ function HRTrackerList() {
               </thead>
             </table>
             {/* Scrollbar below headers */}
-            <div className="overflow-x-auto" style={{ overflowY: "hidden", height: 12, borderBottom: "1px solid #f3f4f6" }}
+            <div className="overflow-x-auto" style={{ overflowY: "hidden", height: 12, borderBottom: "1px solid #f3f4f6", backgroundColor: "#fafafa" }}
               ref={el => {
                 if (!el) return;
                 el._mirrorTarget = el.nextSibling;
@@ -373,12 +373,12 @@ function HRTrackerList() {
               <div style={{ width: "max-content", minWidth: "100%", height: 1 }} ref={el => {
                 if (!el) return;
                 const syncWidth = () => {
-                  const tbody = el.closest(".table-container")?.querySelector("tbody");
-                  if (tbody?.parentElement) el.style.width = tbody.parentElement.scrollWidth + "px";
+                  const tableContainer = el.closest(".table-container");
+                  if (tableContainer) el.style.width = tableContainer.scrollWidth + "px";
                 };
                 syncWidth();
                 const observer = new ResizeObserver(syncWidth);
-                observer.observe(document.body);
+                observer.observe(el.closest(".table-container") || document.body);
               }} />
             </div>
             <div className="overflow-x-auto table-container" ref={el => {
