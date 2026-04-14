@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import WelcomeScreen from "../components/WelcomeScreen";
 import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
 import RecordTimeline from "../components/RecordTimeline";
+import MobileRequestCard from "../components/MobileRequestCard";
 import { base44 } from "@/api/base44Client";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
@@ -266,8 +267,36 @@ export default function HRTracker() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden -mx-3 sm:mx-0">
+      {/* Mobile card list (< md) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No requests found.</p>
+          </div>
+        ) : filtered.map(req => (
+          <MobileRequestCard
+            key={req.id}
+            req={req}
+            sla={getSLA(req)}
+            isEditing={editingId === req.id}
+            editData={editData}
+            setEditData={setEditData}
+            onView={() => setViewingReq(req)}
+            onStartEdit={() => startEdit(req)}
+            onSaveEdit={() => saveEdit(req)}
+            onCancelEdit={() => setEditingId(null)}
+            hasNOD={hasNOD}
+          />
+        ))}
+      </div>
+
+      {/* Desktop table (>= md) */}
+      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />

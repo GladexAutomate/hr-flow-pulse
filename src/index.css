@@ -79,5 +79,10 @@
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+  }
+
+  button, a, [role="button"] {
+    @apply select-none;
   }
 }

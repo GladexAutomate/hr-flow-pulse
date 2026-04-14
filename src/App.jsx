@@ -5,7 +5,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Layout from './components/Layout';
+import Layout from './components/Layout.jsx';
+import ThemeProvider from './lib/ThemeProvider';
 import HRTracker from './pages/HRTracker';
 import Reports from './pages/Reports';
 import RequestForm from './pages/RequestForm';
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
+    <ThemeProvider>
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
@@ -63,6 +65,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
+    </ThemeProvider>
   )
 }
 

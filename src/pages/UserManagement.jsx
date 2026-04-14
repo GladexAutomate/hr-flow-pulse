@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { UserPlus, Trash2, Mail, Shield, User, Loader2, RefreshCw } from "lucide-react";
+import DeleteUserDialog from "../components/DeleteUserDialog";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -9,6 +10,7 @@ export default function UserManagement() {
   const [inviteRole, setInviteRole] = useState("user");
   const [inviting, setInviting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -31,9 +33,10 @@ export default function UserManagement() {
     fetchUsers();
   };
 
-  const handleDelete = async (userId) => {
-    if (!confirm("Remove this user from the app?")) return;
-    await base44.entities.User.delete(userId);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await base44.entities.User.delete(deleteTarget.id);
+    setDeleteTarget(null);
     fetchUsers();
   };
 
@@ -44,6 +47,13 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+      {deleteTarget && (
+        <DeleteUserDialog
+          user={deleteTarget}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
       <div>
         <h1 className="text-2xl font-extrabold text-gray-800">User Management</h1>
         <p className="text-gray-500 text-sm mt-1">Invite and manage HR staff access</p>
@@ -150,8 +160,9 @@ export default function UserManagement() {
                   </td>
                   <td className="px-5 py-3">
                     <button
-                      onClick={() => handleDelete(user.id)}
+                      onClick={() => setDeleteTarget(user)}
                       className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                      title="Delete Account"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
