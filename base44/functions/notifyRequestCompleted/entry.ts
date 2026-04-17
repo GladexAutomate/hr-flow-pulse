@@ -10,12 +10,16 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true });
     }
 
-    const emailBody = buildCompletionEmail(data);
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: data.email_address,
-      subject: `HR Request Completed: ${data.subject}`,
-      body: emailBody,
-    });
+    try {
+      const emailBody = buildCompletionEmail(data);
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: data.email_address,
+        subject: `HR Request Completed: ${data.subject}`,
+        body: emailBody,
+      });
+    } catch (emailErr) {
+      console.warn("Completion email failed:", emailErr.message);
+    }
 
     return Response.json({ success: true });
   } catch (error) {

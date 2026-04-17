@@ -19,13 +19,17 @@ Deno.serve(async (req) => {
 
     const record = await base44.asServiceRole.entities.HRRequest.create(data);
 
-    // Send confirmation email to requester
-    const emailBody = buildSubmissionEmail(data);
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: data.email_address,
-      subject: `HR Request Received: ${data.subject}`,
-      body: emailBody,
-    });
+    // Send confirmation email — best effort, don't fail the submission if email fails
+    try {
+      const emailBody = buildSubmissionEmail(data);
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: data.email_address,
+        subject: `HR Request Received: ${data.subject}`,
+        body: emailBody,
+      });
+    } catch (emailErr) {
+      console.warn("Email notification failed:", emailErr.message);
+    }
 
     return Response.json({ success: true, id: record.id });
   } catch (error) {
