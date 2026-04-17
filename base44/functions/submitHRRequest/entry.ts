@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
       for (let i = 0; i < binaryStr.length; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
-      const blob = new Blob([bytes]);
-      const res = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob, filename: file_name });
+      const file = new File([bytes], file_name);
+      const res = await base44.asServiceRole.integrations.Core.UploadFile({ file });
       data.file_url = res.file_url;
     }
 
