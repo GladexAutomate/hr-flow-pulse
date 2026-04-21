@@ -7,7 +7,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("user");
+  const [inviteRole, setInviteRole] = useState("anonymous");
   const [inviting, setInviting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -79,14 +79,9 @@ export default function UserManagement() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-600 mb-1">Role</label>
-            <select
-              value={inviteRole}
-              onChange={e => setInviteRole(e.target.value)}
-              className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="user">HR Staff</option>
-              <option value="admin">Admin</option>
-            </select>
+            <div className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-100 text-gray-500 font-semibold">
+              Anonymous (upgrade via table below)
+            </div>
           </div>
           <button
             type="submit"

@@ -11,5 +11,6 @@
       ],
       "default": "anonymous"
     }
-  }
+  },
+  "required": []
 }
