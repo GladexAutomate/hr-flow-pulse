@@ -25,10 +25,9 @@ export default function UserManagement() {
     e.preventDefault();
     setInviting(true);
     setSuccessMsg("");
-    await base44.users.inviteUser(inviteEmail, inviteRole);
+    await base44.users.inviteUser(inviteEmail, "anonymous");
     setSuccessMsg(`Invitation sent to ${inviteEmail}!`);
     setInviteEmail("");
-    setInviteRole("user");
     setInviting(false);
     fetchUsers();
   };
