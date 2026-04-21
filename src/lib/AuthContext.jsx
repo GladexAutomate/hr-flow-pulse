@@ -91,7 +91,18 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      let currentUser = await base44.auth.me();
+
+      // If user is brand new (joined in last 2 min) and not already anonymous, force anonymous role
+      if (currentUser && currentUser.role !== 'anonymous') {
+        const joinedMs = new Date(currentUser.created_date).getTime();
+        const isNew = Date.now() - joinedMs < 2 * 60 * 1000;
+        if (isNew) {
+          await base44.functions.invoke('enforceAnonymousRole', { user_id: currentUser.id });
+          currentUser = await base44.auth.me(); // re-fetch with updated role
+        }
+      }
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
