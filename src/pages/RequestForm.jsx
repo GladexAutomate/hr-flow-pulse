@@ -163,8 +163,8 @@ export default function RequestForm() {
             <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
             <span className="font-bold text-blue-800 text-base sm:text-lg">HR Hub</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-2">HR Request Form</h1>
-          <p className="text-gray-500 text-sm sm:text-base">Fill out the form below and our HR team will get back to you.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-2">People and Culture Request Form</h1>
+          <p className="text-gray-500 text-sm sm:text-base">Fill out the form below and our People and Culture team will get back to you.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-5 sm:p-8 space-y-4 sm:space-y-6">
