@@ -110,8 +110,8 @@ export default function AttendanceProposalForm() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-start justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-extrabold text-gray-800">Attendance Proposal</h1>
-          <p className="text-gray-500 text-sm mt-1">Fill in the details to create an attendance proposal for your team</p>
+          <h1 className="text-2xl font-extrabold text-gray-800">Schedule Proposal</h1>
+           <p className="text-gray-500 text-sm mt-1">Fill in the details to create a schedule proposal for your team</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8 space-y-5">
@@ -151,11 +151,11 @@ export default function AttendanceProposalForm() {
 
           {/* Period */}
           <div className="border-t border-gray-100 pt-5">
-            <DropdownField label="Attendance Period" value={form.period_label} onChange={v => setField("period_label", v)}
-              options={periods.map(p => ({ value: p.label, label: p.label }))} placeholder="Select period" />
-          </div>
+            <DropdownField label="Schedule Period" value={form.period_label} onChange={v => setField("period_label", v)}
+               options={periods.map(p => ({ value: p.label, label: p.label }))} placeholder="Select period" />
+            </div>
 
-          {/* Employees */}
+            {/* Employees */}
           {selectedEmployees.length > 0 && (
             <div className="border-t border-gray-100 pt-5 space-y-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employees ({selectedEmployees.length})</p>
@@ -180,7 +180,7 @@ export default function AttendanceProposalForm() {
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-40 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-200 text-base"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
-            Proceed to Attendance Creation
+            Proceed to Schedule Creation
           </button>
         </div>
       </div>

@@ -69,8 +69,8 @@ export default function NavigationLibrary() {
     },
     {
       id: "attendance-proposal",
-      title: "Attendance Proposal Submission",
-      description: "Team leaders submit attendance proposals for approval",
+      title: "Schedule Proposal Submission",
+      description: "Team leaders submit schedule proposals for approval",
       url: attendanceProposalUrl,
       category: "Forms",
       icon: FileText,
