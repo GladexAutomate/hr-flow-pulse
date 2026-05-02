@@ -51,8 +51,8 @@ Deno.serve(async (req) => {
     : `Attendance Approved — ${teamName} (${periodStart}–${periodEnd})`;
 
   const emailBody = isRejection
-    ? `Hello ${leaderName},\n\nYour attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been rejected by HR.\n\nReason: Test rejection: Please review the schedule and resubmit.\n\nRegards,\n${companyName} HR`
-    : `Hello ${leaderName},\n\nYour attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been approved by HR.\n\nPlease find the approved attendance schedule details below.\n\nRegards,\n${companyName} HR`;
+    ? `<p>Hello ${leaderName},</p><p>Your attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been rejected by HR.</p><p><strong>Reason:</strong> Test rejection: Please review the schedule and resubmit.</p><p>Regards,<br>${companyName} HR</p>`
+    : `<p>Hello ${leaderName},</p><p>Your attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been approved by HR.</p><p>Please find the approved attendance schedule details below.</p><p>Regards,<br>${companyName} HR</p>`;
 
   // Build simple HTML table for schedule
   const htmlSchedule = `
