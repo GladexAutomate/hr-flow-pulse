@@ -3,6 +3,20 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const BASE_ID = "appNRjLCu4uxT395V";
 const TABLE_ID = "tblAOjFrCv9R6fFKq";
 
+// Auto-assign company based on branch name
+const COMPANY_MAP = {
+  GLADEX: "69f57ba77930e0b447d69440",
+  POTB:   "69f57bb27930e0b447d6944b",
+  KLIKK:  "69f58bf8c940d838687a62a2",
+};
+function getCompanyId(branch) {
+  if (!branch) return COMPANY_MAP.GLADEX;
+  const b = branch.toUpperCase();
+  if (b === "POTB") return COMPANY_MAP.POTB;
+  if (b === "KLIKK") return COMPANY_MAP.KLIKK;
+  return COMPANY_MAP.GLADEX;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -38,13 +52,15 @@ Deno.serve(async (req) => {
       const f = r.fields;
       const firstName = (f["First Name"] || "").trim();
       const lastName = (f["Last Name"] || "").trim();
+      const branchVal = Array.isArray(f["Branch"]) ? f["Branch"].join(", ") : (f["Branch"] || "");
       return {
         airtable_id: r.id,
         full_name: [firstName, lastName].filter(Boolean).join(" "),
-        branch: Array.isArray(f["Branch"]) ? f["Branch"].join(", ") : (f["Branch"] || ""),
+        branch: branchVal,
         department: f["Department1"] || f["Department"] || "",
         position: f["Position"] || "",
         status: f["Status"] || "",
+        org_company_id: getCompanyId(branchVal),
       };
     });
 
@@ -73,7 +89,8 @@ Deno.serve(async (req) => {
         ex.branch !== emp.branch ||
         ex.department !== emp.department ||
         ex.position !== emp.position ||
-        ex.status !== emp.status;
+        ex.status !== emp.status ||
+        ex.org_company_id !== emp.org_company_id;
     });
 
     // Update changed records in parallel batches of 10
@@ -86,6 +103,7 @@ Deno.serve(async (req) => {
           department: emp.department,
           position: emp.position,
           status: emp.status,
+          org_company_id: emp.org_company_id,
         })
       ));
     }
