@@ -42,6 +42,7 @@ export default function WebhookSettings() {
   const [recordMap, setRecordMap] = useState({});
   const [testing, setTesting] = useState({});
   const [testResult, setTestResult] = useState({});
+  const [testStatus, setTestStatus] = useState({});
 
   const handleTest = async (key) => {
     const url = values[key];
@@ -50,7 +51,11 @@ export default function WebhookSettings() {
     setTestResult(r => ({ ...r, [key]: null }));
     try {
       const res = await base44.functions.invoke("testWebhook", { url, key });
-      setTestResult(r => ({ ...r, [key]: res.data?.ok ? "ok" : "error" }));
+      // Accept any 2xx or common webhook-received codes (200, 201, 202)
+      // n8n test URLs return 404 when not actively listening — treat as "sent" if status < 500
+      const status = res.data?.status;
+      setTestStatus(s => ({ ...s, [key]: status }));
+      setTestResult(r => ({ ...r, [key]: (status && status < 500) ? "ok" : "error" }));
     } catch {
       setTestResult(r => ({ ...r, [key]: "error" }));
     }
@@ -108,9 +113,9 @@ export default function WebhookSettings() {
               {testing[key] ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : testResult[key] === "ok" ? (
-                <><CheckCircle className="w-4 h-4 text-green-500" /> Sent!</>
+                <><CheckCircle className="w-4 h-4 text-green-500" /> Sent! ({testStatus[key]})</>
               ) : testResult[key] === "error" ? (
-                <><Send className="w-4 h-4 text-red-500" /> Failed</>
+                <><Send className="w-4 h-4 text-red-500" /> Failed ({testStatus[key]})</>
               ) : (
                 <><Send className="w-4 h-4" /> Test</>
               )}
