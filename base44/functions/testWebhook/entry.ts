@@ -9,7 +9,23 @@ Deno.serve(async (req) => {
   if (!url) return Response.json({ error: 'No URL provided' }, { status: 400 });
 
   const response = await fetch(url, {
-    method: 'GET',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event: 'attendance_approved',
+      proposal_id: 'test-proposal-001',
+      team_name: 'Sample Team',
+      leader_name: 'Juan dela Cruz',
+      leader_email: 'juan@example.com',
+      company_name: 'Gladex Main',
+      branch_name: 'Main Branch',
+      department_name: 'Operations',
+      period_label: 'May 16–31, 2025',
+      period_start: '2025-05-16',
+      period_end: '2025-05-31',
+      reviewed_by: 'hr@company.com',
+      reviewed_at: new Date().toISOString(),
+    }),
   });
 
   return Response.json({ status: response.status, ok: response.ok });
