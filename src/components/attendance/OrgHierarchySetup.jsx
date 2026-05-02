@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ChevronRight, Building2, GitBranch, LayoutGrid, Users } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Building2, GitBranch, LayoutGrid, Users, Pencil } from "lucide-react";
 
-function CreateDialog({ title, onSave, onClose }) {
-  const [name, setName] = useState("");
+function CreateDialog({ title, onSave, onClose, initialValue = "", saveLabel = "Create" }) {
+  const [name, setName] = useState(initialValue);
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
@@ -23,9 +23,31 @@ function CreateDialog({ title, onSave, onClose }) {
             onClick={() => name.trim() && onSave(name.trim())}
             className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold transition-all"
           >
-            Create
+            {saveLabel}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EditEmployeeDialog({ emp, onSave, onClose }) {
+  const [form, setForm] = useState({ name: emp.name, email: emp.email || "", position: emp.position || "" });
+  return (
+    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
+      <h3 className="font-bold text-gray-800 text-lg">Edit Employee</h3>
+      {["name", "email", "position"].map(field => (
+        <input key={field} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+          placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+        />
+      ))}
+      <div className="flex gap-2">
+        <button onClick={onClose} className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button disabled={!form.name.trim()} onClick={() => onSave(form)}
+          className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold">
+          Save
+        </button>
       </div>
     </div>
   );
@@ -59,6 +81,7 @@ export default function OrgHierarchySetup() {
   const [selTeam, setSelTeam] = useState(null);
 
   const [dialog, setDialog] = useState(null); // 'company'|'branch'|'dept'|'team'|'employee'
+  const [renaming, setRenaming] = useState(null); // { entity, item }
   const [loading, setLoading] = useState(true);
 
   // Employee dialog state
@@ -117,6 +140,13 @@ export default function OrgHierarchySetup() {
     loadAll();
   };
 
+  const renameItem = async (newName) => {
+    const { entity, item } = renaming;
+    await base44.entities[entity].update(item.id, { name: newName });
+    setRenaming(null);
+    loadAll();
+  };
+
   const filteredBranches = branches.filter(b => b.company_id === selCompany?.id);
   const filteredDepts = departments.filter(d => d.branch_id === selBranch?.id);
   const filteredTeams = teams.filter(t => t.department_id === selDept?.id);
@@ -145,6 +175,7 @@ export default function OrgHierarchySetup() {
               <span className="flex items-center gap-2"><Building2 className="w-3.5 h-3.5 opacity-60" />{c.name}</span>
               <div className="flex items-center gap-1">
                 {selCompany?.id === c.id && <ChevronRight className="w-4 h-4 text-blue-500" />}
+                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Company", item: c }); }} className="text-gray-300 hover:text-blue-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
                 <button onClick={e => { e.stopPropagation(); deleteItem("Company", c.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -172,6 +203,7 @@ export default function OrgHierarchySetup() {
               <span className="flex items-center gap-2"><GitBranch className="w-3.5 h-3.5 opacity-60" />{b.name}</span>
               <div className="flex items-center gap-1">
                 {selBranch?.id === b.id && <ChevronRight className="w-4 h-4 text-purple-500" />}
+                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Branch", item: b }); }} className="text-gray-300 hover:text-purple-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
                 <button onClick={e => { e.stopPropagation(); deleteItem("Branch", b.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -199,6 +231,7 @@ export default function OrgHierarchySetup() {
               <span className="flex items-center gap-2"><LayoutGrid className="w-3.5 h-3.5 opacity-60" />{d.name}</span>
               <div className="flex items-center gap-1">
                 {selDept?.id === d.id && <ChevronRight className="w-4 h-4 text-green-500" />}
+                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Department", item: d }); }} className="text-gray-300 hover:text-green-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
                 <button onClick={e => { e.stopPropagation(); deleteItem("Department", d.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -224,7 +257,10 @@ export default function OrgHierarchySetup() {
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${selTeam?.id === t.id ? "bg-orange-100 text-orange-800 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
             >
               <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 opacity-60" />{t.name}</span>
-              <button onClick={e => { e.stopPropagation(); deleteItem("Team", t.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+              <div className="flex items-center gap-1">
+                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Team", item: t }); }} className="text-gray-300 hover:text-orange-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={e => { e.stopPropagation(); deleteItem("Team", t.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
             </div>
           ))}
         </div>
@@ -250,7 +286,10 @@ export default function OrgHierarchySetup() {
                     {emp.position && <div className="text-xs text-gray-500">{emp.position}</div>}
                     {emp.email && <div className="text-xs text-blue-400">{emp.email}</div>}
                   </div>
-                  <button onClick={() => deleteItem("TeamEmployee", emp.id)} className="text-gray-300 hover:text-red-400 transition-all ml-2"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <div className="flex items-center gap-1 ml-2">
+                    <button onClick={() => setRenaming({ entity: "TeamEmployee", item: emp })} className="text-gray-300 hover:text-gray-500 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => deleteItem("TeamEmployee", emp.id)} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -263,6 +302,21 @@ export default function OrgHierarchySetup() {
       {dialog === "branch" && <CreateDialog title={`Create Branch under ${selCompany?.name}`} onSave={createBranch} onClose={() => setDialog(null)} />}
       {dialog === "dept" && <CreateDialog title={`Create Department under ${selBranch?.name}`} onSave={createDept} onClose={() => setDialog(null)} />}
       {dialog === "team" && <CreateDialog title={`Create Team under ${selDept?.name}`} onSave={createTeam} onClose={() => setDialog(null)} />}
+
+      {renaming && renaming.entity !== "TeamEmployee" && (
+        <CreateDialog
+          title={`Rename ${renaming.entity}`}
+          initialValue={renaming.item.name}
+          saveLabel="Rename"
+          onSave={renameItem}
+          onClose={() => setRenaming(null)}
+        />
+      )}
+      {renaming && renaming.entity === "TeamEmployee" && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setRenaming(null)}>
+          <EditEmployeeDialog emp={renaming.item} onSave={async (data) => { await base44.entities.TeamEmployee.update(renaming.item.id, data); setRenaming(null); loadAll(); }} onClose={() => setRenaming(null)} />
+        </div>
+      )}
 
       {dialog === "employee" && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDialog(null)}>
