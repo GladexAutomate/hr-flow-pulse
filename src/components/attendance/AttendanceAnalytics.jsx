@@ -1,8 +1,10 @@
 import { getDatesInRange, dayOfWeek } from "@/utils/attendanceUtils";
-import { AlertTriangle, Users, DollarSign, TrendingUp, CalendarOff } from "lucide-react";
+import { AlertTriangle, Users, DollarSign, TrendingUp, CalendarOff, Clock } from "lucide-react";
 
 const DAILY_WAGE = 695;
 const OFF_SHIFTS = ["OFF", "VL"];
+const OPENER_SHIFTS = ["MOD", "Opener"]; // Early shifts
+const CLOSER_SHIFTS = ["MID", "Closer"]; // Late shifts
 
 export default function AttendanceAnalytics({ proposal }) {
   const dates = getDatesInRange(proposal.period_start, proposal.period_end);
@@ -40,6 +42,45 @@ export default function AttendanceAnalytics({ proposal }) {
   const sortedByDuty = [...dayStats].sort((a, b) => a.onDuty - b.onDuty);
   const minDay = sortedByDuty[0];
   const maxDay = sortedByDuty[sortedByDuty.length - 1];
+
+  // Check for opener/closer coverage
+  const openerCloserAnalysis = dates.map(d => {
+    const shiftsOnDay = employees.map(emp => {
+      const cell = (schedule[emp.id] || {})[d] || {};
+      return cell.shift || null;
+    });
+    const hasOpeners = shiftsOnDay.some(s => s && OPENER_SHIFTS.some(os => s.includes(os)));
+    const hasClosers = shiftsOnDay.some(s => s && CLOSER_SHIFTS.some(cs => s.includes(cs)));
+    return { date: d, hasOpeners, hasClosers };
+  });
+
+  const daysLackingOpeners = openerCloserAnalysis.filter(d => !d.hasOpeners);
+  const daysLackingClosers = openerCloserAnalysis.filter(d => !d.hasClosers);
+  const daysLackingBoth = openerCloserAnalysis.filter(d => !d.hasOpeners && !d.hasClosers);
+
+  // Check for multiple day-offs per week (rule: max 1 day off per week)
+  const weeklyOffViolations = [];
+  for (let weekStart = 0; weekStart < dates.length; weekStart += 7) {
+    const weekEnd = Math.min(weekStart + 7, dates.length);
+    const weekDates = dates.slice(weekStart, weekEnd);
+    
+    employees.forEach(emp => {
+      const offDaysInWeek = weekDates.filter(d => {
+        const cell = (schedule[emp.id] || {})[d] || {};
+        return OFF_SHIFTS.includes(cell.shift);
+      });
+      
+      if (offDaysInWeek.length > 1) {
+        weeklyOffViolations.push({
+          employee: emp.name,
+          weekStart: weekDates[0],
+          weekEnd: weekDates[weekDates.length - 1],
+          offDays: offDaysInWeek.length,
+          dates: offDaysInWeek
+        });
+      }
+    });
+  }
 
   return (
     <div className="mt-4 space-y-4">
@@ -104,6 +145,56 @@ export default function AttendanceAnalytics({ proposal }) {
           </table>
         </div>
       </div>
+
+      {/* Shift Coverage Alerts */}
+      {daysLackingBoth.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
+          <p className="text-xs font-bold text-red-700 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> 🚨 CRITICAL: {daysLackingBoth.length} day(s) with NO OPENER or CLOSER:
+          </p>
+          <p className="text-xs text-red-600">
+            {daysLackingBoth.map(d => `${d.date.slice(5)} (${dayOfWeek(d.date)})`).join(", ")}
+          </p>
+        </div>
+      )}
+
+      {daysLackingOpeners.length > 0 && daysLackingBoth.length === 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 space-y-1">
+          <p className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> ⚠️ {daysLackingOpeners.length} day(s) lacking OPENER:
+          </p>
+          <p className="text-xs text-orange-600">
+            {daysLackingOpeners.map(d => `${d.date.slice(5)} (${dayOfWeek(d.date)})`).join(", ")}
+          </p>
+        </div>
+      )}
+
+      {daysLackingClosers.length > 0 && daysLackingBoth.length === 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 space-y-1">
+          <p className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> ⚠️ {daysLackingClosers.length} day(s) lacking CLOSER:
+          </p>
+          <p className="text-xs text-orange-600">
+            {daysLackingClosers.map(d => `${d.date.slice(5)} (${dayOfWeek(d.date)})`).join(", ")}
+          </p>
+        </div>
+      )}
+
+      {/* Weekly Day-Off Violations */}
+      {weeklyOffViolations.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 space-y-2">
+          <p className="text-xs font-bold text-yellow-700 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> ⚠️ Multiple Day-Offs Per Week (Rule: Max 1 per week):
+          </p>
+          <div className="space-y-1">
+            {weeklyOffViolations.map((v, idx) => (
+              <p key={idx} className="text-xs text-yellow-600">
+                <strong>{v.employee}</strong> - Week of {v.weekStart.slice(5)}: {v.offDays} days off ({v.dates.map(d => d.slice(5)).join(", ")})
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {daysNoOneOff.length > 0 && (
