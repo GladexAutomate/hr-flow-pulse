@@ -87,7 +87,7 @@ function ShiftCell({ cell, onDrop, onWfhChange, onDelete, missing, onSpreadDragS
     >
       {shift ? (
         <div className="relative">
-          <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm relative">
+          <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm relative min-h-[52px] flex flex-col justify-center">
             {hovered && (
               <button
                 onClick={e => { e.stopPropagation(); onDelete(); }}
