@@ -50,9 +50,60 @@ Deno.serve(async (req) => {
     ? `Attendance Proposal Rejected — ${teamName} (${periodStart}–${periodEnd})`
     : `Attendance Approved — ${teamName} (${periodStart}–${periodEnd})`;
 
+  // Helper function to get day of week
+  const getDayOfWeek = (dateStr) => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[new Date(dateStr).getDay()];
+  };
+
+  // Generate all dates in the period
+  const getAllDates = (start, end) => {
+    const dates = [];
+    let current = new Date(start);
+    const endDate = new Date(end);
+    while (current <= endDate) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const periodDates = getAllDates(periodStart, periodEnd);
+  
+  // Build dynamic table header with all dates
+  let tableHeaderHtml = '<tr style="background-color: #2c3e50; color: white; font-weight: bold;"><th style="text-align: left; padding: 10px 8px; border: 1px solid #bbb; font-size: 13px;">Employee</th>';
+  periodDates.forEach(date => {
+    const datePart = date.slice(5);
+    const day = getDayOfWeek(date);
+    tableHeaderHtml += `<th style="text-align: center; padding: 10px 6px; border: 1px solid #bbb; font-size: 12px;"><strong>${datePart}</strong><br><span style="font-weight: normal; font-size: 11px;">${day}</span></th>`;
+  });
+  tableHeaderHtml += '</tr>';
+
+  // Build sample employee rows
+  const employees = [
+    { name: 'John Doe (Team Lead)' },
+    { name: 'Jane Smith (Supervisor)' }
+  ];
+  
+  let tableBodyHtml = '';
+  employees.forEach((emp, idx) => {
+    const bgColor = idx % 2 === 0 ? '#f5f5f5' : '#ffffff';
+    tableBodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 10px 8px; border: 1px solid #ddd; font-weight: 600; font-size: 13px;">${emp.name}</td>`;
+    
+    periodDates.forEach((date, dateIdx) => {
+      const shifts = ['Opener', 'Mid', 'Closer'];
+      const shift = shifts[(idx + dateIdx) % shifts.length];
+      const shiftColor = shift === 'Mid' ? '#ff9800' : '#333';
+      tableBodyHtml += `<td style="padding: 8px 6px; border: 1px solid #ddd; text-align: center; font-size: 12px; color: ${shiftColor};">${shift}</td>`;
+    });
+    tableBodyHtml += '</tr>';
+  });
+
+  const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0; font-family: Arial, sans-serif; font-size: 12px;">${tableHeaderHtml}${tableBodyHtml}</table>`;
+
   const emailBody = isRejection
     ? `<p>Hello ${leaderName},</p><p>Your attendance proposal for <strong>${companyName} / ${branchName} / ${deptName} / ${teamName}</strong> covering <strong>${periodStart}–${periodEnd}</strong> has been rejected by HR.</p><p><strong style="color: #d32f2f;">Reason:</strong> Test rejection: Please review the schedule and resubmit.</p><hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;"><p style="color: #666; font-size: 12px;">Please contact HR for further clarification.</p><p>Regards,<br><strong>${companyName} HR</strong></p>`
-    : `<p>Hello ${leaderName},</p><p>Your attendance proposal for <strong>${companyName} / ${branchName} / ${deptName} / ${teamName}</strong> covering <strong>${periodStart}–${periodEnd}</strong> has been <strong style="color: #4caf50;">approved</strong> by HR.</p><p>Please find the approved attendance schedule details below.</p><hr style="border: none; border-top: 2px solid #333; margin: 20px 0;"><h2 style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">APPROVED ATTENDANCE PROPOSAL</h2><div style="margin-bottom: 20px; line-height: 1.8;"><p><strong>Company:</strong> ${companyName}</p><p><strong>Branch:</strong> ${branchName}</p><p><strong>Department:</strong> ${deptName}</p><p><strong>Team:</strong> ${teamName}</p><p><strong>Leader:</strong> ${leaderName}</p><p><strong>Period:</strong> ${periodStart} to ${periodEnd}</p></div><table border="1" cellpadding="12" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: Arial, sans-serif;"><thead><tr style="background-color: #2d3e50; color: white; font-weight: bold;"><th style="text-align: left; padding: 12px; border: 1px solid #ddd;">Employee</th><th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-16<br><span style="font-weight: normal; font-size: 12px;">Fri</span></th><th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-17<br><span style="font-weight: normal; font-size: 12px;">Sat</span></th><th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-18<br><span style="font-weight: normal; font-size: 12px;">Sun</span></th></tr></thead><tbody><tr style="background-color: #f9f9f9;"><td style="padding: 12px; border: 1px solid #ddd;">John Doe (Team Lead)</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Opener</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: #e67e22;">Mid</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Closer</td></tr><tr style="background-color: #ffffff;"><td style="padding: 12px; border: 1px solid #ddd;">Jane Smith (Supervisor)</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: #e67e22;">Mid</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Closer</td><td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Opener</td></tr></tbody></table><p style="color: #666; font-size: 12px; margin-top: 20px;">Generated on ${new Date().toISOString()}</p><hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;"><p>Regards,<br><strong>${companyName} HR</strong></p>`;
+    : `<p>Hello ${leaderName},</p><p>Your attendance proposal for <strong>${companyName} / ${branchName} / ${deptName} / ${teamName}</strong> covering <strong>${periodStart}–${periodEnd}</strong> has been <strong style="color: #4caf50;">approved</strong> by HR.</p><p>Please find the approved attendance schedule details below.</p><hr style="border: none; border-top: 2px solid #333; margin: 20px 0;"><h2 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">APPROVED ATTENDANCE PROPOSAL</h2><div style="margin-bottom: 15px; line-height: 1.6; font-size: 13px;"><p style="margin: 5px 0;"><strong>Company:</strong> ${companyName}</p><p style="margin: 5px 0;"><strong>Branch:</strong> ${branchName}</p><p style="margin: 5px 0;"><strong>Department:</strong> ${deptName}</p><p style="margin: 5px 0;"><strong>Team:</strong> ${teamName}</p><p style="margin: 5px 0;"><strong>Leader:</strong> ${leaderName}</p><p style="margin: 5px 0;"><strong>Period:</strong> ${periodStart} to ${periodEnd}</p></div>${tableHtml}<p style="color: #999; font-size: 11px; margin-top: 15px;">Generated on ${new Date().toISOString()}</p><hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;"><p style="margin-bottom: 5px;">Regards,</p><p style="margin: 0;"><strong>${companyName} HR</strong></p>`;
 
   const payload = {
     event: isRejection ? 'attendance_rejected' : 'attendance_approved',
