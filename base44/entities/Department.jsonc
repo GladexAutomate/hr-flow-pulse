@@ -1,0 +1,20 @@
+{
+  "name": "Department",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "branch_id",
+    "company_id"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "department_id",
+    "branch_id",
+    "company_id"
+  ]
+}

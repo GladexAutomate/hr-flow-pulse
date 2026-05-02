@@ -1,0 +1,31 @@
+{
+  "name": "TeamEmployee",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "team_id",
+    "name"
+  ]
+}

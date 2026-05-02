@@ -1,12 +1,12 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { ClipboardList, BarChart2, Users, Settings } from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
-import { useRef } from "react";
+import { ClipboardList, BarChart2, Users, Settings, CalendarDays, ClipboardCheck } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/", label: "Tracker", icon: ClipboardList },
   { to: "/reports", label: "Reports", icon: BarChart2 },
+  { to: "/attendance", label: "Attendance", icon: CalendarDays },
+  { to: "/attendance-requests", label: "Attn. Requests", icon: ClipboardCheck },
   { to: "/users", label: "Users", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

@@ -15,6 +15,10 @@ import RequestForm from './pages/RequestForm';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
 import RequestDetail from './pages/RequestDetail';
+import EmployeeAttendance from './pages/EmployeeAttendance';
+import AttendanceProposalForm from './pages/AttendanceProposalForm';
+import AttendanceScheduler from './pages/AttendanceScheduler';
+import AttendanceRequests from './pages/AttendanceRequests';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -92,6 +96,21 @@ const AuthenticatedApp = () => {
               <RequestDetail />
             </motion.div>
           } />
+          <Route path="/attendance" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <EmployeeAttendance />
+            </motion.div>
+          } />
+          <Route path="/attendance-requests" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <AttendanceRequests />
+            </motion.div>
+          } />
+          <Route path="/attendance-scheduler/:id" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <AttendanceScheduler />
+            </motion.div>
+          } />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -109,8 +128,9 @@ function App() {
         <Router>
           <Routes>
             <Route path="/request-form" element={<RequestForm />} />
+            <Route path="/attendance-proposal" element={<AttendanceProposalForm />} />
             <Route path="*" element={<AuthenticatedApp />} />
-          </Routes>
+            </Routes>
         </Router>
         <Toaster />
       </QueryClientProvider>
