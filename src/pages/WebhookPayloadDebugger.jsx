@@ -90,13 +90,43 @@ export default function WebhookPayloadDebugger() {
   };
 
   const generateRejectedEmailBody = (proposal) => {
+    const dates = getDatesInRange(proposal.period_start, proposal.period_end);
+    const employees = proposal.employees || [];
+    const schedule = proposal.schedule || {};
+
+    const dateHeaderHtml = dates.map(d => `
+      <th style="padding: 8px; border: 1px solid #ddd; font-size: 11px; background-color: #f5f5f5; text-align: center; min-width: 50px;">
+        ${d.slice(5)}<br/><span style="font-weight: normal; color: #666;">${dayOfWeek(d)}</span>
+      </th>
+    `).join('');
+
+    const employeeRowsHtml = employees.map((emp, i) => {
+      const cellsHtml = dates.map(d => {
+        const cell = (schedule[emp.id] || {})[d] || {};
+        const shift = cell.shift ? getShift(cell.shift) : null;
+        return `
+          <td style="padding: 6px; border: 1px solid #ddd; text-align: center; font-size: 11px; background-color: ${shift ? shift.color : '#fff'}; color: ${shift ? shift.text : '#999'};">
+            ${shift ? (cell.shift === "Custom" ? (cell.customLabel || "Custom") : shift.label) : "—"}
+            ${cell.wfh ? `<div style="font-size: 9px;">${cell.wfh}</div>` : ''}
+          </td>
+        `;
+      }).join('');
+
+      return `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; background-color: #f9f9f9;">${emp.name}</td>
+          ${cellsHtml}
+        </tr>
+      `;
+    }).join('');
+
     return `
       <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
           <h2 style="color: #e74c3c;">Attendance Proposal Rejected</h2>
           <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          
+
           <h3 style="color: #333; margin-bottom: 10px;">Proposal Details</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <tr><td style="padding: 8px; font-weight: bold; background-color: #f5f5f5;">Team:</td><td style="padding: 8px;">${proposal.team_name}</td></tr>
@@ -105,6 +135,19 @@ export default function WebhookPayloadDebugger() {
             <tr><td style="padding: 8px; font-weight: bold; background-color: #f5f5f5;">Department:</td><td style="padding: 8px;">${proposal.department_name}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold; background-color: #f5f5f5;">Period:</td><td style="padding: 8px;">${proposal.period_label}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold; background-color: #f5f5f5;">Leader:</td><td style="padding: 8px;">${proposal.leader_name} (${proposal.leader_email})</td></tr>
+          </table>
+
+          <h3 style="color: #333; margin-bottom: 10px;">Attendance Schedule</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+            <thead>
+              <tr style="background-color: #003d82; color: white;">
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Employee</th>
+                ${dateHeaderHtml}
+              </tr>
+            </thead>
+            <tbody>
+              ${employeeRowsHtml}
+            </tbody>
           </table>
 
           <div style="background-color: #fdeaea; border-left: 4px solid #e74c3c; padding: 12px; margin: 20px 0;">
