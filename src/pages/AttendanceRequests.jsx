@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getDatesInRange, getShift, dayOfWeek, generateApprovedAttendanceHtml, generateRejectedAttendanceHtml } from "@/utils/attendanceUtils";
 import { CheckCircle, XCircle, Eye, Loader2, Calendar } from "lucide-react";
+import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
 
 const STATUS_COLORS = {
   "Pending HR Review": "bg-yellow-100 text-yellow-700",
@@ -126,6 +127,7 @@ function ProposalCard({ proposal, onAction }) {
       {expanded && (
         <div className="border-t border-gray-100 px-5 py-4">
           <ReadOnlyGrid proposal={proposal} />
+          <AttendanceAnalytics proposal={proposal} />
           {proposal.remarks && (
             <div className="mt-3 bg-yellow-50 rounded-xl px-4 py-3 text-sm">
               <span className="font-semibold text-yellow-800">Remarks: </span>
