@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { Trash2, AlertTriangle, LogOut, Copy, Check, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import WebhookSettings from "@/components/settings/WebhookSettings";
 
 const HR_FORM_URL = `${window.location.origin}/request-form`;
 
@@ -61,6 +62,9 @@ export default function Settings() {
           <LogOut className="w-4 h-4" /> Sign Out
         </Button>
       </div>
+
+      {/* Webhook Settings */}
+      <WebhookSettings />
 
       {/* Danger Zone */}
       <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-5 space-y-3">

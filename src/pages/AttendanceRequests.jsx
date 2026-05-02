@@ -159,6 +159,17 @@ export default function AttendanceRequests() {
 
   useEffect(() => { load(); }, []);
 
+  const fireWebhook = async (webhookKey, payload) => {
+    const settings = await base44.entities.AppSettings.filter({ key: webhookKey });
+    const url = settings?.[0]?.value;
+    if (!url) return;
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  };
+
   const handleAction = async (action, proposal, rejectionNote) => {
     if (action === "approve") {
       const approvedHtml = generateApprovedAttendanceHtml({ proposal, schedule: proposal.schedule || {} });
@@ -167,11 +178,25 @@ export default function AttendanceRequests() {
         reviewed_by: user?.email,
         reviewed_at: new Date().toISOString(),
       });
-      // Send approval email
       await base44.integrations.Core.SendEmail({
         to: proposal.leader_email,
         subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
-        body: `Hello ${proposal.leader_name},\n\nYour attendance proposal for ${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name} covering ${proposal.period_start}–${proposal.period_end} has been approved by HR.\n\nPlease find the approved attendance proposal below for download and review.\n\nRegards,\n${proposal.company_name} HR\n\n` + approvedHtml,
+        body: `Hello ${proposal.leader_name},\n\nYour attendance proposal for ${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name} covering ${proposal.period_start}–${proposal.period_end} has been approved by HR.\n\nRegards,\n${proposal.company_name} HR\n\n` + approvedHtml,
+      });
+      fireWebhook("attendance_approved_webhook", {
+        event: "attendance_approved",
+        proposal_id: proposal.id,
+        team_name: proposal.team_name,
+        leader_name: proposal.leader_name,
+        leader_email: proposal.leader_email,
+        company_name: proposal.company_name,
+        branch_name: proposal.branch_name,
+        department_name: proposal.department_name,
+        period_label: proposal.period_label,
+        period_start: proposal.period_start,
+        period_end: proposal.period_end,
+        reviewed_by: user?.email,
+        reviewed_at: new Date().toISOString(),
       });
     } else {
       const rejectedHtml = generateRejectedAttendanceHtml({ proposal, schedule: proposal.schedule || {}, rejectionNote });
@@ -185,6 +210,22 @@ export default function AttendanceRequests() {
         to: proposal.leader_email,
         subject: `Attendance Proposal Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         body: `Hello ${proposal.leader_name},\n\nYour attendance proposal for ${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name} covering ${proposal.period_start}–${proposal.period_end} has been rejected by HR.\n\nReason: ${rejectionNote}\n\nRegards,\n${proposal.company_name} HR\n\n` + rejectedHtml,
+      });
+      fireWebhook("attendance_rejected_webhook", {
+        event: "attendance_rejected",
+        proposal_id: proposal.id,
+        team_name: proposal.team_name,
+        leader_name: proposal.leader_name,
+        leader_email: proposal.leader_email,
+        company_name: proposal.company_name,
+        branch_name: proposal.branch_name,
+        department_name: proposal.department_name,
+        period_label: proposal.period_label,
+        period_start: proposal.period_start,
+        period_end: proposal.period_end,
+        rejection_note: rejectionNote,
+        reviewed_by: user?.email,
+        reviewed_at: new Date().toISOString(),
       });
     }
     load();
