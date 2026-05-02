@@ -93,7 +93,12 @@ export default function OrgHierarchySetup() {
     t.dept_name === selDept
   );
 
-  // Employees assigned to a team via org_team_id (active only)
+  // Employees in the selected department (for the assign panel)
+  const deptEmployees = selDept
+    ? branchEmployees.filter(e => e.department === selDept)
+    : [];
+
+  // Employees assigned to the selected team
   const filteredEmployees = activeAtEmployees.filter(e => e.org_team_id === selTeam?.id);
 
   const createCompany = async (name) => {
@@ -123,6 +128,16 @@ export default function OrgHierarchySetup() {
     const { entity, item } = renaming;
     await base44.entities[entity].update(item.id, { name: newName });
     setRenaming(null);
+    loadAll();
+  };
+
+  const assignToTeam = async (emp, team) => {
+    await base44.entities.AirtableEmployee.update(emp.id, { org_team_id: team.id });
+    loadAll();
+  };
+
+  const removeFromTeam = async (emp) => {
+    await base44.entities.AirtableEmployee.update(emp.id, { org_team_id: "" });
     loadAll();
   };
 
@@ -232,43 +247,67 @@ export default function OrgHierarchySetup() {
         </div>
       </Section>
 
-      {/* Employees panel — sourced from AirtableEmployee */}
-      {selTeam && (
+      {/* Department Employees panel — shown when a dept is selected */}
+      {selDept && (
         <div className="lg:col-span-2 xl:col-span-4">
-          <Section
-            icon={Users} label={`Employees — ${selTeam.name}`} color="bg-gray-50 text-gray-800"
-            action={
-              <a
-                href="/airtable-employees"
-                className="flex items-center gap-1 bg-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-all"
-              >
-                <Plus className="w-3 h-3" /> Assign Employees
-              </a>
-            }
-          >
-            {filteredEmployees.length === 0 ? (
-              <div className="text-center py-6 text-gray-400 text-sm">
-                <p>No employees assigned to this team yet.</p>
-                <p className="mt-1 text-xs">Go to <a href="/airtable-employees" className="text-orange-500 underline">Airtable Employee List</a> and set the Org Assignment for employees.</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-green-50 text-green-800">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <Users className="w-4 h-4" />
+                {selTeam ? `Employees — ${selTeam.name}` : `All Employees — ${selDept}`}
+                <span className="ml-1 text-xs font-normal text-green-600">({deptEmployees.length} in dept)</span>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {filteredEmployees.map(emp => (
-                  <div key={emp.id} className="flex items-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                    <div>
-                      <div className="font-semibold text-gray-800 text-sm">{emp.full_name}</div>
-                      {emp.position && <div className="text-xs text-gray-500">{emp.position}</div>}
-                      {emp.status && (
-                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded mt-0.5 inline-block ${emp.status?.toUpperCase() === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                          {emp.status}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
+            </div>
+            <div className="p-4">
+              {deptEmployees.length === 0 ? (
+                <p className="text-gray-400 text-sm text-center py-6">No active employees found in this department.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {deptEmployees.map(emp => {
+                    const assignedTeam = teams.find(t => t.id === emp.org_team_id);
+                    const isInSelTeam = selTeam && emp.org_team_id === selTeam.id;
+                    return (
+                      <div key={emp.id} className={`flex flex-col bg-gray-50 rounded-xl px-4 py-3 border transition-all ${isInSelTeam ? "border-orange-300 bg-orange-50" : "border-gray-100"}`}>
+                        <div className="font-semibold text-gray-800 text-sm">{emp.full_name}</div>
+                        {emp.position && <div className="text-xs text-gray-500 mt-0.5">{emp.position}</div>}
+                        {assignedTeam && (
+                          <div className="text-xs text-blue-600 mt-0.5 font-medium">📌 {assignedTeam.name}</div>
+                        )}
+                        <div className="mt-2 flex gap-1">
+                          {selTeam && !isInSelTeam && (
+                            <button
+                              onClick={() => assignToTeam(emp, selTeam)}
+                              className="flex-1 text-xs bg-orange-500 hover:bg-orange-600 text-white font-semibold px-2 py-1 rounded-lg transition-all"
+                            >
+                              + Assign
+                            </button>
+                          )}
+                          {isInSelTeam && (
+                            <button
+                              onClick={() => removeFromTeam(emp)}
+                              className="flex-1 text-xs bg-red-100 hover:bg-red-200 text-red-600 font-semibold px-2 py-1 rounded-lg transition-all"
+                            >
+                              Remove
+                            </button>
+                          )}
+                          {!selTeam && filteredTeams.length > 0 && (
+                            <select
+                              defaultValue=""
+                              onChange={e => { if (e.target.value) assignToTeam(emp, teams.find(t => t.id === e.target.value)); }}
+                              className="flex-1 text-xs border border-gray-200 rounded-lg px-1 py-1 focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
+                            >
+                              <option value="">Assign to…</option>
+                              {filteredTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
