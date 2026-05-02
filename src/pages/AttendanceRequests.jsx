@@ -206,12 +206,21 @@ export default function AttendanceRequests() {
   const fireWebhook = async (webhookKey, payload) => {
     const settings = await base44.entities.AppSettings.filter({ key: webhookKey });
     const url = settings?.[0]?.value;
-    if (!url) return;
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
+    if (!url) {
+      console.warn(`❌ Webhook URL not configured for key: ${webhookKey}`);
+      return;
+    }
+    console.log(`🔄 Sending webhook to ${webhookKey}:`, url);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      console.log(`✅ Webhook sent successfully (${response.status})`);
+    } catch (error) {
+      console.error(`❌ Webhook failed: ${error.message}`);
+    }
   };
 
   const handleAction = async (action, proposal, rejectionNote) => {
