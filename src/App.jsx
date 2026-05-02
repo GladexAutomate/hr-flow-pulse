@@ -20,6 +20,8 @@ import AttendanceProposalForm from './pages/AttendanceProposalForm';
 import AttendanceScheduler from './pages/AttendanceScheduler';
 import AttendanceRequests from './pages/AttendanceRequests';
 import AirtableEmployeeList from './pages/AirtableEmployeeList';
+import PublicSchedule from './pages/PublicSchedule';
+import ScheduleDashboard from './pages/ScheduleDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -112,8 +114,14 @@ const AuthenticatedApp = () => {
               <AirtableEmployeeList />
             </motion.div>
           } />
+          <Route path="/schedule-dashboard" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <ScheduleDashboard />
+            </motion.div>
+          } />
 
         </Route>
+        <Route path="/schedule/:branch/:department" element={<PublicSchedule />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </AnimatePresence>

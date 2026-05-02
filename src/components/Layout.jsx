@@ -1,12 +1,13 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { ClipboardList, BarChart2, Users, Settings, CalendarDays, ClipboardCheck, Database } from "lucide-react";
+import { ClipboardList, BarChart2, Users, Settings, CalendarDays, ClipboardCheck, Database, Calendar } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/", label: "Tracker", icon: ClipboardList },
   { to: "/reports", label: "Reports", icon: BarChart2 },
   { to: "/attendance", label: "Attendance", icon: CalendarDays },
   { to: "/attendance-requests", label: "Attn. Requests", icon: ClipboardCheck },
+  { to: "/schedule-dashboard", label: "Schedules", icon: Calendar },
   { to: "/airtable-employees", label: "AT Employees", icon: Database },
   { to: "/users", label: "Users", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
