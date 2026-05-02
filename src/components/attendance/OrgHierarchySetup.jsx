@@ -31,27 +31,6 @@ function CreateDialog({ title, onSave, onClose, initialValue = "", saveLabel = "
   );
 }
 
-function EditEmployeeDialog({ emp, onSave, onClose }) {
-  const [form, setForm] = useState({ name: emp.name, email: emp.email || "", position: emp.position || "" });
-  return (
-    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
-      <h3 className="font-bold text-gray-800 text-lg">Edit Employee</h3>
-      {["name", "email", "position"].map(field => (
-        <input key={field} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-          placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
-      ))}
-      <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-        <button disabled={!form.name.trim()} onClick={() => onSave(form)}
-          className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold">
-          Save
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Section({ icon: Icon, label, color, children, action }) {
   return (
@@ -73,19 +52,16 @@ export default function OrgHierarchySetup() {
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [atEmployees, setAtEmployees] = useState([]); // from AirtableEmployee
 
   const [selCompany, setSelCompany] = useState(null);
   const [selBranch, setSelBranch] = useState(null);
   const [selDept, setSelDept] = useState(null);
   const [selTeam, setSelTeam] = useState(null);
 
-  const [dialog, setDialog] = useState(null); // 'company'|'branch'|'dept'|'team'|'employee'
+  const [dialog, setDialog] = useState(null); // 'company'|'branch'|'dept'|'team'
   const [renaming, setRenaming] = useState(null); // { entity, item }
   const [loading, setLoading] = useState(true);
-
-  // Employee dialog state
-  const [empForm, setEmpForm] = useState({ name: "", email: "", position: "" });
 
   useEffect(() => { loadAll(); }, []);
 
@@ -96,9 +72,9 @@ export default function OrgHierarchySetup() {
       base44.entities.Branch.list(),
       base44.entities.Department.list(),
       base44.entities.Team.list(),
-      base44.entities.TeamEmployee.list(),
+      base44.entities.AirtableEmployee.list("full_name", 500),
     ]);
-    setCompanies(c); setBranches(b); setDepartments(d); setTeams(t); setEmployees(e);
+    setCompanies(c); setBranches(b); setDepartments(d); setTeams(t); setAtEmployees(e);
     setLoading(false);
   };
 
@@ -122,19 +98,6 @@ export default function OrgHierarchySetup() {
     setDialog(null); loadAll();
   };
 
-  const createEmployee = async () => {
-    if (!empForm.name.trim()) return;
-    await base44.entities.TeamEmployee.create({
-      ...empForm,
-      team_id: selTeam.id,
-      department_id: selDept.id,
-      branch_id: selBranch.id,
-      company_id: selCompany.id,
-    });
-    setEmpForm({ name: "", email: "", position: "" });
-    setDialog(null); loadAll();
-  };
-
   const deleteItem = async (entity, id) => {
     await base44.entities[entity].delete(id);
     loadAll();
@@ -150,7 +113,7 @@ export default function OrgHierarchySetup() {
   const filteredBranches = branches.filter(b => b.company_id === selCompany?.id);
   const filteredDepts = departments.filter(d => d.branch_id === selBranch?.id);
   const filteredTeams = teams.filter(t => t.department_id === selDept?.id);
-  const filteredEmployees = employees.filter(e => e.team_id === selTeam?.id);
+  const filteredEmployees = atEmployees.filter(e => e.org_team_id === selTeam?.id);
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>;
 
@@ -266,33 +229,42 @@ export default function OrgHierarchySetup() {
         </div>
       </Section>
 
-      {/* Employees panel */}
+      {/* Employees panel — sourced from AirtableEmployee */}
       {selTeam && (
         <div className="lg:col-span-2 xl:col-span-4">
           <Section
             icon={Users} label={`Employees — ${selTeam.name}`} color="bg-gray-50 text-gray-800"
             action={
-              <button onClick={() => setDialog("employee")} className="flex items-center gap-1 bg-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-all">
-                <Plus className="w-3 h-3" /> Add Employee
-              </button>
+              <a
+                href="/airtable-employees"
+                className="flex items-center gap-1 bg-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-all"
+              >
+                <Plus className="w-3 h-3" /> Assign Employees
+              </a>
             }
           >
-            {filteredEmployees.length === 0 && <p className="text-gray-400 text-sm text-center py-4">No employees in this team yet</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {filteredEmployees.map(emp => (
-                <div key={emp.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                  <div>
-                    <div className="font-semibold text-gray-800 text-sm">{emp.name}</div>
-                    {emp.position && <div className="text-xs text-gray-500">{emp.position}</div>}
-                    {emp.email && <div className="text-xs text-blue-400">{emp.email}</div>}
+            {filteredEmployees.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 text-sm">
+                <p>No employees assigned to this team yet.</p>
+                <p className="mt-1 text-xs">Go to <a href="/airtable-employees" className="text-orange-500 underline">Airtable Employee List</a> and set the Org Assignment for employees.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {filteredEmployees.map(emp => (
+                  <div key={emp.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                    <div>
+                      <div className="font-semibold text-gray-800 text-sm">{emp.full_name}</div>
+                      {emp.position && <div className="text-xs text-gray-500">{emp.position}</div>}
+                      {emp.status && (
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded mt-0.5 inline-block ${emp.status?.toUpperCase() === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                          {emp.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    <button onClick={() => setRenaming({ entity: "TeamEmployee", item: emp })} className="text-gray-300 hover:text-gray-500 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => deleteItem("TeamEmployee", emp.id)} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Section>
         </div>
       )}
@@ -303,7 +275,7 @@ export default function OrgHierarchySetup() {
       {dialog === "dept" && <CreateDialog title={`Create Department under ${selBranch?.name}`} onSave={createDept} onClose={() => setDialog(null)} />}
       {dialog === "team" && <CreateDialog title={`Create Team under ${selDept?.name}`} onSave={createTeam} onClose={() => setDialog(null)} />}
 
-      {renaming && renaming.entity !== "TeamEmployee" && (
+      {renaming && (
         <CreateDialog
           title={`Rename ${renaming.entity}`}
           initialValue={renaming.item.name}
@@ -312,32 +284,7 @@ export default function OrgHierarchySetup() {
           onClose={() => setRenaming(null)}
         />
       )}
-      {renaming && renaming.entity === "TeamEmployee" && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setRenaming(null)}>
-          <EditEmployeeDialog emp={renaming.item} onSave={async (data) => { await base44.entities.TeamEmployee.update(renaming.item.id, data); setRenaming(null); loadAll(); }} onClose={() => setRenaming(null)} />
-        </div>
-      )}
 
-      {dialog === "employee" && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDialog(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-gray-800 text-lg">Add Employee to {selTeam?.name}</h3>
-            {["name", "email", "position"].map(field => (
-              <input key={field} value={empForm[field]} onChange={e => setEmpForm(f => ({ ...f, [field]: e.target.value }))}
-                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
-            ))}
-            <div className="flex gap-2">
-              <button onClick={() => setDialog(null)} className="flex-1 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-              <button disabled={!empForm.name.trim()} onClick={createEmployee}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white rounded-xl py-2.5 text-sm font-semibold">
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
