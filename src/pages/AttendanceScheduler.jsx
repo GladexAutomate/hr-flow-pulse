@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { getDatesInRange, SHIFT_TYPES, getShift, dayOfWeek } from "@/utils/attendanceUtils";
-import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X } from "lucide-react";
 
 const WFH_OPTIONS = ["Onsite", "WFH"];
 const SHIFTS_WITH_WFH = ["Opener", "Mid", "Closer", "Night", "Custom"];
@@ -59,7 +59,7 @@ function CellEditor({ cell, onClose, onSave }) {
   );
 }
 
-function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSpreadDragEnter, isSpreading, spreadAxis }) {
+function ShiftCell({ cell, onDrop, onWfhChange, onDelete, missing, onSpreadDragStart, onSpreadDragEnter, isSpreading, spreadAxis }) {
   const [dragOver, setDragOver] = useState(false);
   const [hovered, setHovered] = useState(false);
   const shift = cell?.shift ? getShift(cell.shift) : null;
@@ -86,7 +86,16 @@ function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSp
     >
       {shift ? (
         <div className="relative">
-          <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm">
+          <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm relative">
+            {hovered && (
+              <button
+                onClick={e => { e.stopPropagation(); onDelete(); }}
+                className="absolute -top-1.5 -right-1.5 z-30 bg-red-500 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center shadow transition-all"
+                title="Remove shift"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
             {cell.shift === "Custom" ? (cell.customLabel || "Custom") : shift.label}
             {cell.customTime && <div className="text-xs opacity-80">{cell.customTime}</div>}
             {showWfh && (
@@ -334,6 +343,11 @@ export default function AttendanceScheduler() {
                         }
                       }}
                       onWfhChange={val => setCell(emp.id, d, { wfh: val })}
+                      onDelete={() => setSchedule(s => {
+                        const next = { ...s, [emp.id]: { ...(s[emp.id] || {}) } };
+                        delete next[emp.id][d];
+                        return next;
+                      })}
                       onSpreadDragStart={dir => handleSpreadDragStart(emp.id, empIdx, dIdx, dir)}
                       onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, empIdx, dIdx)}
                     />
