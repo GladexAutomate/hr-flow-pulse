@@ -141,8 +141,6 @@ export default function AirtableEmployeeList() {
                     <OrgAssignCell
                       emp={emp}
                       companies={companies}
-                      allTeams={allTeams}
-                      atEmployees={employees}
                       onSaved={handleEmpSaved}
                     />
                   </tr>
