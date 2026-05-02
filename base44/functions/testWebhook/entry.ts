@@ -9,23 +9,7 @@ Deno.serve(async (req) => {
   if (!url) return Response.json({ error: 'No URL provided' }, { status: 400 });
 
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      event: key,
-      test: true,
-      proposal_id: 'test-001',
-      team_name: 'Sample Team',
-      leader_name: 'Juan dela Cruz',
-      leader_email: 'juan@example.com',
-      company_name: 'Sample Company',
-      branch_name: 'Main Branch',
-      department_name: 'Operations',
-      period_label: 'May 16–31, 2025',
-      period_start: '2025-05-16',
-      period_end: '2025-05-31',
-      message: 'This is a test webhook fired from HR Tracker Settings.',
-    }),
+    method: 'GET',
   });
 
   return Response.json({ status: response.status, ok: response.ok });
