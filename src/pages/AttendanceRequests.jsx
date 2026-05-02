@@ -261,10 +261,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        employees: proposal.employees || [],
-        schedule: proposal.schedule || {},
-        reviewed_by: user?.email,
-        reviewed_at: new Date().toISOString(),
+        email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
       });
     } else if (action === "reject") {
       await base44.entities.AttendanceProposal.update(proposal.id, {
@@ -285,11 +282,8 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        employees: proposal.employees || [],
-        schedule: proposal.schedule || {},
+        email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: rejectionNote,
-        reviewed_by: user?.email,
-        reviewed_at: new Date().toISOString(),
       });
     } else if (action === "resend-approved") {
       fireWebhook("attendance_approved_webhook", {
@@ -304,10 +298,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        employees: proposal.employees || [],
-        schedule: proposal.schedule || {},
-        reviewed_by: proposal.reviewed_by,
-        reviewed_at: proposal.reviewed_at,
+        email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
       });
     } else if (action === "resend-rejected") {
       fireWebhook("attendance_rejected_webhook", {
@@ -322,11 +313,8 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        employees: proposal.employees || [],
-        schedule: proposal.schedule || {},
+        email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: proposal.rejection_note,
-        reviewed_by: proposal.reviewed_by,
-        reviewed_at: proposal.reviewed_at,
       });
     }
     load();
