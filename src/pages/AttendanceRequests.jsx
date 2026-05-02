@@ -242,6 +242,54 @@ export default function AttendanceRequests() {
     }
   };
 
+  const generateApprovedEmailBody = (proposal) => {
+    return `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #27ae60;">Attendance Proposal Approved</h2>
+          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been approved.</p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold;">Team:</td><td style="padding: 8px;">${proposal.team_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Company:</td><td style="padding: 8px;">${proposal.company_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Branch:</td><td style="padding: 8px;">${proposal.branch_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Department:</td><td style="padding: 8px;">${proposal.department_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Period:</td><td style="padding: 8px;">${proposal.period_label}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Leader:</td><td style="padding: 8px;">${proposal.leader_name} (${proposal.leader_email})</td></tr>
+          </table>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">This is an automated notification. Please do not reply to this email.</p>
+        </body>
+      </html>
+    `;
+  };
+
+  const generateRejectedEmailBody = (proposal, rejectionNote) => {
+    return `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #e74c3c;">Attendance Proposal Rejected</h2>
+          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; font-weight: bold;">Team:</td><td style="padding: 8px;">${proposal.team_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Company:</td><td style="padding: 8px;">${proposal.company_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Branch:</td><td style="padding: 8px;">${proposal.branch_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Department:</td><td style="padding: 8px;">${proposal.department_name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Period:</td><td style="padding: 8px;">${proposal.period_label}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Leader:</td><td style="padding: 8px;">${proposal.leader_name} (${proposal.leader_email})</td></tr>
+          </table>
+          <div style="background-color: #fdeaea; border-left: 4px solid #e74c3c; padding: 12px; margin: 20px 0;">
+            <p style="margin: 0; font-weight: bold; color: #e74c3c;">Rejection Reason:</p>
+            <p style="margin: 8px 0 0 0; color: #c0392b;">${rejectionNote}</p>
+          </div>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">This is an automated notification. Please do not reply to this email.</p>
+        </body>
+      </html>
+    `;
+  };
+
   const handleAction = async (action, proposal, rejectionNote) => {
     if (action === "approve") {
       await base44.entities.AttendanceProposal.update(proposal.id, {
@@ -262,6 +310,7 @@ export default function AttendanceRequests() {
         period_start: proposal.period_start,
         period_end: proposal.period_end,
         email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_body: generateApprovedEmailBody(proposal),
       });
     } else if (action === "reject") {
       await base44.entities.AttendanceProposal.update(proposal.id, {
@@ -284,6 +333,7 @@ export default function AttendanceRequests() {
         period_end: proposal.period_end,
         email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: rejectionNote,
+        email_body: generateRejectedEmailBody(proposal, rejectionNote),
       });
     } else if (action === "resend-approved") {
       fireWebhook("attendance_approved_webhook", {
@@ -299,6 +349,7 @@ export default function AttendanceRequests() {
         period_start: proposal.period_start,
         period_end: proposal.period_end,
         email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_body: generateApprovedEmailBody(proposal),
       });
     } else if (action === "resend-rejected") {
       fireWebhook("attendance_rejected_webhook", {
@@ -315,6 +366,7 @@ export default function AttendanceRequests() {
         period_end: proposal.period_end,
         email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: proposal.rejection_note,
+        email_body: generateRejectedEmailBody(proposal, proposal.rejection_note || ""),
       });
     }
     load();
