@@ -69,12 +69,21 @@ export default function ScheduleDashboard() {
       // Extract unique branches and departments
       const branchSet = new Set();
       const deptSet = new Set();
+      const monthSet = new Set();
       data.forEach(p => {
         if (p.branch_name) branchSet.add(p.branch_name);
         if (p.department_name) deptSet.add(p.department_name);
+        if (p.period_start) monthSet.add(p.period_start.slice(0, 7));
       });
       setBranches(Array.from(branchSet).sort());
       setDepartments(Array.from(deptSet).sort());
+      
+      // Set default month to the first available month from proposals
+      const availableMonths = Array.from(monthSet).sort().reverse();
+      if (availableMonths.length > 0) {
+        setSelectedMonth(availableMonths[0]);
+      }
+      
       setLoading(false);
     };
     load();
