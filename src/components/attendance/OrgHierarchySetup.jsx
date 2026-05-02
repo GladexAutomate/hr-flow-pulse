@@ -31,7 +31,6 @@ function CreateDialog({ title, onSave, onClose, initialValue = "", saveLabel = "
   );
 }
 
-
 function Section({ icon: Icon, label, color, children, action }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -49,17 +48,15 @@ function Section({ icon: Icon, label, color, children, action }) {
 
 export default function OrgHierarchySetup() {
   const [companies, setCompanies] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [atEmployees, setAtEmployees] = useState([]); // from AirtableEmployee
+  const [atEmployees, setAtEmployees] = useState([]);
 
   const [selCompany, setSelCompany] = useState(null);
-  const [selBranch, setSelBranch] = useState(null);
-  const [selDept, setSelDept] = useState(null);
+  const [selBranch, setSelBranch] = useState(null); // branch name string
+  const [selDept, setSelDept] = useState(null);     // dept name string
   const [selTeam, setSelTeam] = useState(null);
 
-  const [dialog, setDialog] = useState(null); // 'company'|'branch'|'dept'|'team'
+  const [dialog, setDialog] = useState(null); // 'company' | 'team'
   const [renaming, setRenaming] = useState(null); // { entity, item }
   const [loading, setLoading] = useState(true);
 
@@ -67,34 +64,47 @@ export default function OrgHierarchySetup() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [c, b, d, t, e] = await Promise.all([
+    const [c, t, e] = await Promise.all([
       base44.entities.Company.list(),
-      base44.entities.Branch.list(),
-      base44.entities.Department.list(),
       base44.entities.Team.list(),
       base44.entities.AirtableEmployee.list("full_name", 500),
     ]);
-    setCompanies(c); setBranches(b); setDepartments(d); setTeams(t); setAtEmployees(e);
+    setCompanies(c); setTeams(t); setAtEmployees(e);
     setLoading(false);
   };
+
+  // Derive branches & departments from AirtableEmployee data
+  // Employees are linked to a company via org_company_id
+  const companyEmployees = atEmployees.filter(e => e.org_company_id === selCompany?.id);
+  const atBranches = [...new Set(companyEmployees.map(e => e.branch).filter(Boolean))].sort();
+  const branchEmployees = companyEmployees.filter(e => e.branch === selBranch);
+  const atDepts = [...new Set(branchEmployees.map(e => e.department).filter(Boolean))].sort();
+
+  // Teams are stored with branch_name + dept_name strings
+  const filteredTeams = teams.filter(t =>
+    t.company_id === selCompany?.id &&
+    t.branch_name === selBranch &&
+    t.dept_name === selDept
+  );
+
+  // Employees assigned to a team via org_team_id
+  const filteredEmployees = atEmployees.filter(e => e.org_team_id === selTeam?.id);
 
   const createCompany = async (name) => {
     await base44.entities.Company.create({ name });
     setDialog(null); loadAll();
   };
 
-  const createBranch = async (name) => {
-    await base44.entities.Branch.create({ name, company_id: selCompany.id });
-    setDialog(null); loadAll();
-  };
-
-  const createDept = async (name) => {
-    await base44.entities.Department.create({ name, branch_id: selBranch.id, company_id: selCompany.id });
-    setDialog(null); loadAll();
-  };
-
   const createTeam = async (name) => {
-    await base44.entities.Team.create({ name, department_id: selDept.id, branch_id: selBranch.id, company_id: selCompany.id });
+    await base44.entities.Team.create({
+      name,
+      company_id: selCompany.id,
+      branch_name: selBranch,
+      dept_name: selDept,
+      // keep these for compatibility with AttendanceProposalForm
+      branch_id: selBranch,
+      department_id: selDept,
+    });
     setDialog(null); loadAll();
   };
 
@@ -109,11 +119,6 @@ export default function OrgHierarchySetup() {
     setRenaming(null);
     loadAll();
   };
-
-  const filteredBranches = branches.filter(b => b.company_id === selCompany?.id);
-  const filteredDepts = departments.filter(d => d.branch_id === selBranch?.id);
-  const filteredTeams = teams.filter(t => t.department_id === selDept?.id);
-  const filteredEmployees = atEmployees.filter(e => e.org_team_id === selTeam?.id);
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>;
 
@@ -146,65 +151,57 @@ export default function OrgHierarchySetup() {
         </div>
       </Section>
 
-      {/* Branches */}
+      {/* Branches — from Airtable data */}
       <Section
-        icon={GitBranch} label={selCompany ? `Branches — ${selCompany.name}` : "Branches"} color="bg-purple-50 text-purple-800"
-        action={selCompany && (
-          <button onClick={() => setDialog("branch")} className="flex items-center gap-1 bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-purple-800 transition-all">
-            <Plus className="w-3 h-3" /> Create
-          </button>
-        )}
+        icon={GitBranch}
+        label={selCompany ? `Branches — ${selCompany.name}` : "Branches"}
+        color="bg-purple-50 text-purple-800"
       >
         {!selCompany && <p className="text-gray-400 text-sm text-center py-4">Select a company first</p>}
-        {selCompany && filteredBranches.length === 0 && <p className="text-gray-400 text-sm text-center py-4">No branches yet</p>}
+        {selCompany && atBranches.length === 0 && (
+          <p className="text-gray-400 text-sm text-center py-4">No branches found in Airtable data for this company</p>
+        )}
         <div className="space-y-1">
-          {filteredBranches.map(b => (
-            <div key={b.id}
-              onClick={() => { setSelBranch(b); setSelDept(null); setSelTeam(null); }}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${selBranch?.id === b.id ? "bg-purple-100 text-purple-800 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
+          {atBranches.map(branchName => (
+            <div key={branchName}
+              onClick={() => { setSelBranch(branchName); setSelDept(null); setSelTeam(null); }}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${selBranch === branchName ? "bg-purple-100 text-purple-800 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
             >
-              <span className="flex items-center gap-2"><GitBranch className="w-3.5 h-3.5 opacity-60" />{b.name}</span>
-              <div className="flex items-center gap-1">
-                {selBranch?.id === b.id && <ChevronRight className="w-4 h-4 text-purple-500" />}
-                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Branch", item: b }); }} className="text-gray-300 hover:text-purple-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={e => { e.stopPropagation(); deleteItem("Branch", b.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div>
+              <span className="flex items-center gap-2"><GitBranch className="w-3.5 h-3.5 opacity-60" />{branchName}</span>
+              {selBranch === branchName && <ChevronRight className="w-4 h-4 text-purple-500" />}
             </div>
           ))}
         </div>
       </Section>
 
-      {/* Departments */}
+      {/* Departments — from Airtable data */}
       <Section
-        icon={LayoutGrid} label={selBranch ? `Departments — ${selBranch.name}` : "Departments"} color="bg-green-50 text-green-800"
-        action={selBranch && (
-          <button onClick={() => setDialog("dept")} className="flex items-center gap-1 bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-green-800 transition-all">
-            <Plus className="w-3 h-3" /> Create
-          </button>
-        )}
+        icon={LayoutGrid}
+        label={selBranch ? `Departments — ${selBranch}` : "Departments"}
+        color="bg-green-50 text-green-800"
       >
         {!selBranch && <p className="text-gray-400 text-sm text-center py-4">Select a branch first</p>}
-        {selBranch && filteredDepts.length === 0 && <p className="text-gray-400 text-sm text-center py-4">No departments yet</p>}
+        {selBranch && atDepts.length === 0 && (
+          <p className="text-gray-400 text-sm text-center py-4">No departments found in Airtable data for this branch</p>
+        )}
         <div className="space-y-1">
-          {filteredDepts.map(d => (
-            <div key={d.id}
-              onClick={() => { setSelDept(d); setSelTeam(null); }}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${selDept?.id === d.id ? "bg-green-100 text-green-800 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
+          {atDepts.map(deptName => (
+            <div key={deptName}
+              onClick={() => { setSelDept(deptName); setSelTeam(null); }}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm ${selDept === deptName ? "bg-green-100 text-green-800 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
             >
-              <span className="flex items-center gap-2"><LayoutGrid className="w-3.5 h-3.5 opacity-60" />{d.name}</span>
-              <div className="flex items-center gap-1">
-                {selDept?.id === d.id && <ChevronRight className="w-4 h-4 text-green-500" />}
-                <button onClick={e => { e.stopPropagation(); setRenaming({ entity: "Department", item: d }); }} className="text-gray-300 hover:text-green-400 transition-all"><Pencil className="w-3.5 h-3.5" /></button>
-                <button onClick={e => { e.stopPropagation(); deleteItem("Department", d.id); }} className="text-gray-300 hover:text-red-400 transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div>
+              <span className="flex items-center gap-2"><LayoutGrid className="w-3.5 h-3.5 opacity-60" />{deptName}</span>
+              {selDept === deptName && <ChevronRight className="w-4 h-4 text-green-500" />}
             </div>
           ))}
         </div>
       </Section>
 
-      {/* Teams */}
+      {/* Teams — manually created */}
       <Section
-        icon={Users} label={selDept ? `Teams — ${selDept.name}` : "Teams"} color="bg-orange-50 text-orange-800"
+        icon={Users}
+        label={selDept ? `Teams — ${selDept}` : "Teams"}
+        color="bg-orange-50 text-orange-800"
         action={selDept && (
           <button onClick={() => setDialog("team")} className="flex items-center gap-1 bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-all">
             <Plus className="w-3 h-3" /> Create
@@ -251,7 +248,7 @@ export default function OrgHierarchySetup() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {filteredEmployees.map(emp => (
-                  <div key={emp.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                  <div key={emp.id} className="flex items-center bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
                     <div>
                       <div className="font-semibold text-gray-800 text-sm">{emp.full_name}</div>
                       {emp.position && <div className="text-xs text-gray-500">{emp.position}</div>}
@@ -271,9 +268,7 @@ export default function OrgHierarchySetup() {
 
       {/* Dialogs */}
       {dialog === "company" && <CreateDialog title="Create Company" onSave={createCompany} onClose={() => setDialog(null)} />}
-      {dialog === "branch" && <CreateDialog title={`Create Branch under ${selCompany?.name}`} onSave={createBranch} onClose={() => setDialog(null)} />}
-      {dialog === "dept" && <CreateDialog title={`Create Department under ${selBranch?.name}`} onSave={createDept} onClose={() => setDialog(null)} />}
-      {dialog === "team" && <CreateDialog title={`Create Team under ${selDept?.name}`} onSave={createTeam} onClose={() => setDialog(null)} />}
+      {dialog === "team" && <CreateDialog title={`Create Team under ${selDept}`} onSave={createTeam} onClose={() => setDialog(null)} />}
 
       {renaming && (
         <CreateDialog
@@ -284,7 +279,6 @@ export default function OrgHierarchySetup() {
           onClose={() => setRenaming(null)}
         />
       )}
-
     </div>
   );
 }

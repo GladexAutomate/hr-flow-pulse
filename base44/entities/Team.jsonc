@@ -5,20 +5,28 @@
     "name": {
       "type": "string"
     },
-    "department_id": {
-      "type": "string"
-    },
-    "branch_id": {
-      "type": "string"
-    },
     "company_id": {
       "type": "string"
+    },
+    "branch_name": {
+      "type": "string",
+      "description": "Branch name from Airtable data"
+    },
+    "dept_name": {
+      "type": "string",
+      "description": "Department name from Airtable data"
+    },
+    "department_id": {
+      "type": "string",
+      "description": "Legacy field \u2014 stores dept name string for compatibility"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Legacy field \u2014 stores branch name string for compatibility"
     }
   },
   "required": [
     "name",
-    "department_id",
-    "branch_id",
     "company_id"
   ]
 }

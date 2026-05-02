@@ -18,8 +18,6 @@ export default function AirtableEmployeeList() {
 
   // Org hierarchy data
   const [companies, setCompanies] = useState([]);
-  const [allBranches, setAllBranches] = useState([]);
-  const [allDepartments, setAllDepartments] = useState([]);
   const [allTeams, setAllTeams] = useState([]);
 
   const fetchEmployees = async () => {
@@ -34,13 +32,9 @@ export default function AirtableEmployeeList() {
     // Load org hierarchy in parallel
     Promise.all([
       base44.entities.Company.list(),
-      base44.entities.Branch.list(),
-      base44.entities.Department.list(),
       base44.entities.Team.list(),
-    ]).then(([c, b, d, t]) => {
+    ]).then(([c, t]) => {
       setCompanies(c);
-      setAllBranches(b);
-      setAllDepartments(d);
       setAllTeams(t);
     });
   }, []);
@@ -147,9 +141,8 @@ export default function AirtableEmployeeList() {
                     <OrgAssignCell
                       emp={emp}
                       companies={companies}
-                      allBranches={allBranches}
-                      allDepartments={allDepartments}
                       allTeams={allTeams}
+                      atEmployees={employees}
                       onSaved={handleEmpSaved}
                     />
                   </tr>

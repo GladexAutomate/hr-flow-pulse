@@ -8,10 +8,8 @@ import { generatePeriods } from "@/utils/attendanceUtils";
 export default function AttendanceProposalForm() {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [allEmployees, setAllEmployees] = useState([]);
+  const [atEmployees, setAtEmployees] = useState([]);
 
   const [form, setForm] = useState({
     leader_email: "", leader_name: "", leader_position: "",
@@ -27,40 +25,44 @@ export default function AttendanceProposalForm() {
   useEffect(() => {
     Promise.all([
       base44.entities.Company.list(),
-      base44.entities.Branch.list(),
-      base44.entities.Department.list(),
       base44.entities.Team.list(),
-      base44.entities.TeamEmployee.list(),
-    ]).then(([c, b, d, t, e]) => {
-      setCompanies(c); setBranches(b); setDepartments(d); setTeams(t); setAllEmployees(e);
+      base44.entities.AirtableEmployee.list("full_name", 500),
+    ]).then(([c, t, e]) => {
+      setCompanies(c); setTeams(t); setAtEmployees(e);
       setLoading(false);
     });
   }, []);
 
+  // Derive branches and departments from AT data
+  const companyEmployees = atEmployees.filter(e => e.org_company_id === form.company_id);
+  const filteredBranches = [...new Set(companyEmployees.map(e => e.branch).filter(Boolean))].sort();
+  const branchEmployees = companyEmployees.filter(e => e.branch === form.branch_id);
+  const filteredDepts = [...new Set(branchEmployees.map(e => e.department).filter(Boolean))].sort();
+  const filteredTeams = teams.filter(t =>
+    t.company_id === form.company_id &&
+    t.branch_name === form.branch_id &&
+    t.dept_name === form.department_id
+  );
+
   // Auto-load employees when team changes
   useEffect(() => {
     if (form.team_id) {
-      const emps = allEmployees.filter(e => e.team_id === form.team_id);
+      const emps = atEmployees.filter(e => e.org_team_id === form.team_id);
       setSelectedEmployees(emps);
     } else {
       setSelectedEmployees([]);
     }
-  }, [form.team_id, allEmployees]);
+  }, [form.team_id, atEmployees]);
 
   const setField = (key, val) => {
     setForm(f => {
       const next = { ...f, [key]: val };
-      // cascade resets
       if (key === "company_id") { next.branch_id = ""; next.department_id = ""; next.team_id = ""; }
       if (key === "branch_id") { next.department_id = ""; next.team_id = ""; }
       if (key === "department_id") { next.team_id = ""; }
       return next;
     });
   };
-
-  const filteredBranches = branches.filter(b => b.company_id === form.company_id);
-  const filteredDepts = departments.filter(d => d.branch_id === form.branch_id);
-  const filteredTeams = teams.filter(t => t.department_id === form.department_id);
 
   const canProceed =
     form.leader_email && form.leader_name &&
@@ -71,19 +73,17 @@ export default function AttendanceProposalForm() {
     setSubmitting(true);
     const period = periods.find(p => p.label === form.period_label);
     const company = companies.find(c => c.id === form.company_id);
-    const branch = branches.find(b => b.id === form.branch_id);
-    const dept = departments.find(d => d.id === form.department_id);
     const team = teams.find(t => t.id === form.team_id);
 
     const proposal = await base44.entities.AttendanceProposal.create({
       ...form,
       company_name: company?.name,
-      branch_name: branch?.name,
-      department_name: dept?.name,
+      branch_name: form.branch_id,
+      department_name: form.department_id,
       team_name: team?.name,
       period_start: period.start,
       period_end: period.end,
-      employees: selectedEmployees.map(e => ({ id: e.id, name: e.name, position: e.position || "" })),
+      employees: selectedEmployees.map(e => ({ id: e.id, name: e.full_name, position: e.position || "" })),
       schedule: {},
       status: "Draft",
     });
@@ -132,9 +132,9 @@ export default function AttendanceProposalForm() {
               <DropdownField label="Company" value={form.company_id} onChange={v => setField("company_id", v)}
                 options={companies.map(c => ({ value: c.id, label: c.name }))} placeholder="Select company" />
               <DropdownField label="Branch" value={form.branch_id} onChange={v => setField("branch_id", v)}
-                options={filteredBranches.map(b => ({ value: b.id, label: b.name }))} placeholder="Select branch" disabled={!form.company_id} />
+                options={filteredBranches.map(b => ({ value: b, label: b }))} placeholder="Select branch" disabled={!form.company_id} />
               <DropdownField label="Department" value={form.department_id} onChange={v => setField("department_id", v)}
-                options={filteredDepts.map(d => ({ value: d.id, label: d.name }))} placeholder="Select department" disabled={!form.branch_id} />
+                options={filteredDepts.map(d => ({ value: d, label: d }))} placeholder="Select department" disabled={!form.branch_id} />
               <DropdownField label="Team" value={form.team_id} onChange={v => setField("team_id", v)}
                 options={filteredTeams.map(t => ({ value: t.id, label: t.name }))} placeholder="Select team" disabled={!form.department_id} />
             </div>
@@ -154,7 +154,7 @@ export default function AttendanceProposalForm() {
                 {selectedEmployees.map(emp => (
                   <div key={emp.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5">
                     <div>
-                      <span className="font-semibold text-gray-800 text-sm">{emp.name}</span>
+                      <span className="font-semibold text-gray-800 text-sm">{emp.full_name || emp.name}</span>
                       {emp.position && <span className="text-xs text-gray-400 ml-2">{emp.position}</span>}
                     </div>
                     <button onClick={() => setSelectedEmployees(s => s.filter(e => e.id !== emp.id))}
