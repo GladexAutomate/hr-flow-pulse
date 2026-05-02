@@ -20,6 +20,22 @@
     },
     "status": {
       "type": "string"
+    },
+    "org_company_id": {
+      "type": "string",
+      "description": "ID of the Company from org hierarchy"
+    },
+    "org_branch_id": {
+      "type": "string",
+      "description": "ID of the Branch from org hierarchy"
+    },
+    "org_department_id": {
+      "type": "string",
+      "description": "ID of the Department from org hierarchy"
+    },
+    "org_team_id": {
+      "type": "string",
+      "description": "ID of the Team from org hierarchy"
     }
   },
   "required": [

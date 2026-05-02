@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { RefreshCw, Search, Users } from "lucide-react";
+import OrgAssignCell from "@/components/airtable/OrgAssignCell";
 
 const STATUS_COLORS = {
   "ACTIVE": "bg-green-100 text-green-700",
@@ -15,6 +16,12 @@ export default function AirtableEmployeeList() {
   const [search, setSearch] = useState("");
   const [syncMsg, setSyncMsg] = useState(null);
 
+  // Org hierarchy data
+  const [companies, setCompanies] = useState([]);
+  const [allBranches, setAllBranches] = useState([]);
+  const [allDepartments, setAllDepartments] = useState([]);
+  const [allTeams, setAllTeams] = useState([]);
+
   const fetchEmployees = async () => {
     setLoading(true);
     const data = await base44.entities.AirtableEmployee.list("full_name", 500);
@@ -22,7 +29,21 @@ export default function AirtableEmployeeList() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => {
+    fetchEmployees();
+    // Load org hierarchy in parallel
+    Promise.all([
+      base44.entities.Company.list(),
+      base44.entities.Branch.list(),
+      base44.entities.Department.list(),
+      base44.entities.Team.list(),
+    ]).then(([c, b, d, t]) => {
+      setCompanies(c);
+      setAllBranches(b);
+      setAllDepartments(d);
+      setAllTeams(t);
+    });
+  }, []);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -31,6 +52,10 @@ export default function AirtableEmployeeList() {
     setSyncMsg(`Sync complete — ${res.data.total} records (${res.data.created} created, ${res.data.updated} updated)`);
     await fetchEmployees();
     setSyncing(false);
+  };
+
+  const handleEmpSaved = (updated) => {
+    setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
   };
 
   const filtered = employees.filter(e => {
@@ -91,13 +116,19 @@ export default function AirtableEmployeeList() {
             <p>{employees.length === 0 ? 'No data yet. Click "Sync from Airtable" to load employees.' : "No results found."}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" style={{ maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
             <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white sticky top-0">
+              <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white sticky top-0 z-10">
                 <tr>
-                  {["#", "Full Name", "Branch", "Department", "Position", "Status"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
-                  ))}
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide w-8">#</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Full Name</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">AT Branch</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">AT Department</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Position</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap" colSpan={4}>
+                    Org Assignment (Company › Branch › Dept › Team)
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -113,6 +144,14 @@ export default function AirtableEmployeeList() {
                         {emp.status || "—"}
                       </span>
                     </td>
+                    <OrgAssignCell
+                      emp={emp}
+                      companies={companies}
+                      allBranches={allBranches}
+                      allDepartments={allDepartments}
+                      allTeams={allTeams}
+                      onSaved={handleEmpSaved}
+                    />
                   </tr>
                 ))}
               </tbody>
