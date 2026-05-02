@@ -5,7 +5,7 @@ import { ClipboardList, BarChart2, Users, Settings, CalendarDays, ClipboardCheck
 const NAV_LINKS = [
   { to: "/", label: "Tracker", icon: ClipboardList },
   { to: "/reports", label: "Reports", icon: BarChart2 },
-  { to: "/attendance", label: "Attendance", icon: CalendarDays },
+  { to: "/attendance", label: "Organization Setup", icon: CalendarDays },
   { to: "/attendance-requests", label: "Attn. Requests", icon: ClipboardCheck },
   { to: "/schedule-dashboard", label: "Schedules", icon: Calendar },
   { to: "/airtable-employees", label: "AT Employees", icon: Database },
