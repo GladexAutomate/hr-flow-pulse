@@ -173,8 +173,32 @@ export default function AttendanceRequests() {
   };
 
   const handleAction = async (action, proposal, rejectionNote) => {
+    // Generate screenshot
+    const screenshotRes = await base44.functions.invoke("generateProposalScreenshot", {
+      proposalData: {
+        company_name: proposal.company_name,
+        branch_name: proposal.branch_name,
+        department_name: proposal.department_name,
+        team_name: proposal.team_name,
+        leader_name: proposal.leader_name,
+        period_start: proposal.period_start,
+        period_end: proposal.period_end,
+        employees: proposal.employees || [],
+        schedule: proposal.schedule || {},
+      }
+    });
+
+    const screenshotBase64 = screenshotRes.data.base64;
+
     if (action === "approve") {
-      const approvedHtml = generateApprovedAttendanceHtml({ proposal, schedule: proposal.schedule || {} });
+      const emailBody = `<p>Hello ${proposal.leader_name},</p>
+<p>Your attendance proposal for <strong>${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name}</strong> covering <strong>${proposal.period_start}–${proposal.period_end}</strong> has been <strong style="color: #4caf50;">approved</strong> by HR.</p>
+<p>Please find the approved attendance schedule details below.</p>
+<hr style="border: none; border-top: 2px solid #333; margin: 20px 0;">
+<img src="${screenshotBase64}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0;">
+<hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+<p>Regards,<br><strong>${proposal.company_name} HR</strong></p>`;
+
       await base44.entities.AttendanceProposal.update(proposal.id, {
         status: "Approved",
         reviewed_by: user?.email,
@@ -183,7 +207,7 @@ export default function AttendanceRequests() {
       await base44.integrations.Core.SendEmail({
         to: proposal.leader_email,
         subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
-        body: `Hello ${proposal.leader_name},\n\nYour attendance proposal for ${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name} covering ${proposal.period_start}–${proposal.period_end} has been approved by HR.\n\nRegards,\n${proposal.company_name} HR\n\n` + approvedHtml,
+        body: emailBody,
       });
       fireWebhook("attendance_approved_webhook", {
         event: "attendance_approved",
@@ -201,7 +225,16 @@ export default function AttendanceRequests() {
         reviewed_at: new Date().toISOString(),
       });
     } else {
-      const rejectedHtml = generateRejectedAttendanceHtml({ proposal, schedule: proposal.schedule || {}, rejectionNote });
+      const emailBody = `<p>Hello ${proposal.leader_name},</p>
+<p>Your attendance proposal for <strong>${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name}</strong> covering <strong>${proposal.period_start}–${proposal.period_end}</strong> has been rejected by HR.</p>
+<p><strong style="color: #d32f2f;">Reason:</strong> ${rejectionNote}</p>
+<p>Please review the schedule details below and resubmit your proposal.</p>
+<hr style="border: none; border-top: 2px solid #333; margin: 20px 0;">
+<img src="${screenshotBase64}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0;">
+<hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+<p>Please contact HR for further clarification.</p>
+<p>Regards,<br><strong>${proposal.company_name} HR</strong></p>`;
+
       await base44.entities.AttendanceProposal.update(proposal.id, {
         status: "Rejected",
         rejection_note: rejectionNote,
@@ -211,7 +244,7 @@ export default function AttendanceRequests() {
       await base44.integrations.Core.SendEmail({
         to: proposal.leader_email,
         subject: `Attendance Proposal Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
-        body: `Hello ${proposal.leader_name},\n\nYour attendance proposal for ${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name} covering ${proposal.period_start}–${proposal.period_end} has been rejected by HR.\n\nReason: ${rejectionNote}\n\nRegards,\n${proposal.company_name} HR\n\n` + rejectedHtml,
+        body: emailBody,
       });
       fireWebhook("attendance_rejected_webhook", {
         event: "attendance_rejected",
