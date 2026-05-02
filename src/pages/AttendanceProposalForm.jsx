@@ -33,8 +33,14 @@ export default function AttendanceProposalForm() {
     });
   }, []);
 
+  // Exclude resigned/terminated employees
+  const activeEmployees = atEmployees.filter(e => {
+    const s = (e.status || "").toUpperCase();
+    return s !== "RESIGNED" && s !== "TERMINATED";
+  });
+
   // Derive branches and departments from AT data
-  const companyEmployees = atEmployees.filter(e => e.org_company_id === form.company_id);
+  const companyEmployees = activeEmployees.filter(e => e.org_company_id === form.company_id);
   const filteredBranches = [...new Set(companyEmployees.map(e => e.branch).filter(Boolean))].sort();
   const branchEmployees = companyEmployees.filter(e => e.branch === form.branch_id);
   const filteredDepts = [...new Set(branchEmployees.map(e => e.department).filter(Boolean))].sort();
@@ -47,7 +53,10 @@ export default function AttendanceProposalForm() {
   // Auto-load employees when team changes
   useEffect(() => {
     if (form.team_id) {
-      const emps = atEmployees.filter(e => e.org_team_id === form.team_id);
+      const emps = atEmployees.filter(e => {
+        const s = (e.status || "").toUpperCase();
+        return e.org_team_id === form.team_id && s !== "RESIGNED" && s !== "TERMINATED";
+      });
       setSelectedEmployees(emps);
     } else {
       setSelectedEmployees([]);

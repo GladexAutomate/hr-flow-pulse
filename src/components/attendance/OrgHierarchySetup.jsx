@@ -73,9 +73,15 @@ export default function OrgHierarchySetup() {
     setLoading(false);
   };
 
+  // Exclude resigned/terminated employees
+  const activeAtEmployees = atEmployees.filter(e => {
+    const s = (e.status || "").toUpperCase();
+    return s !== "RESIGNED" && s !== "TERMINATED";
+  });
+
   // Derive branches & departments from AirtableEmployee data
   // Employees are linked to a company via org_company_id
-  const companyEmployees = atEmployees.filter(e => e.org_company_id === selCompany?.id);
+  const companyEmployees = activeAtEmployees.filter(e => e.org_company_id === selCompany?.id);
   const atBranches = [...new Set(companyEmployees.map(e => e.branch).filter(Boolean))].sort();
   const branchEmployees = companyEmployees.filter(e => e.branch === selBranch);
   const atDepts = [...new Set(branchEmployees.map(e => e.department).filter(Boolean))].sort();
@@ -87,8 +93,8 @@ export default function OrgHierarchySetup() {
     t.dept_name === selDept
   );
 
-  // Employees assigned to a team via org_team_id
-  const filteredEmployees = atEmployees.filter(e => e.org_team_id === selTeam?.id);
+  // Employees assigned to a team via org_team_id (active only)
+  const filteredEmployees = activeAtEmployees.filter(e => e.org_team_id === selTeam?.id);
 
   const createCompany = async (name) => {
     await base44.entities.Company.create({ name });
