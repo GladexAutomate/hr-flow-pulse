@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Webhook, Save, Loader2, CheckCircle } from "lucide-react";
+import { Webhook, Save, Loader2, CheckCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const WEBHOOK_KEYS = [
@@ -40,6 +40,41 @@ export default function WebhookSettings() {
   }, []);
 
   const [recordMap, setRecordMap] = useState({});
+  const [testing, setTesting] = useState({});
+  const [testResult, setTestResult] = useState({});
+
+  const handleTest = async (key) => {
+    const url = values[key];
+    if (!url) return;
+    setTesting(t => ({ ...t, [key]: true }));
+    setTestResult(r => ({ ...r, [key]: null }));
+    try {
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: key,
+          test: true,
+          proposal_id: "test-001",
+          team_name: "Sample Team",
+          leader_name: "Juan dela Cruz",
+          leader_email: "juan@example.com",
+          company_name: "Sample Company",
+          branch_name: "Main Branch",
+          department_name: "Operations",
+          period_label: "May 16–31, 2025",
+          period_start: "2025-05-16",
+          period_end: "2025-05-31",
+          message: "This is a test webhook fired from HR Tracker Settings.",
+        }),
+      });
+      setTestResult(r => ({ ...r, [key]: "ok" }));
+    } catch {
+      setTestResult(r => ({ ...r, [key]: "error" }));
+    }
+    setTesting(t => ({ ...t, [key]: false }));
+    setTimeout(() => setTestResult(r => ({ ...r, [key]: null })), 3000);
+  };
 
   const handleSave = async (key) => {
     setSaving(s => ({ ...s, [key]: true }));
@@ -81,6 +116,23 @@ export default function WebhookSettings() {
               placeholder="https://hooks.example.com/..."
               className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50"
             />
+            <Button
+              onClick={() => handleTest(key)}
+              disabled={testing[key] || !values[key]}
+              variant="outline"
+              className="shrink-0 flex items-center gap-1.5"
+              title="Send a test payload to this webhook"
+            >
+              {testing[key] ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : testResult[key] === "ok" ? (
+                <><CheckCircle className="w-4 h-4 text-green-500" /> Sent!</>
+              ) : testResult[key] === "error" ? (
+                <><Send className="w-4 h-4 text-red-500" /> Failed</>
+              ) : (
+                <><Send className="w-4 h-4" /> Test</>
+              )}
+            </Button>
             <Button
               onClick={() => handleSave(key)}
               disabled={saving[key]}
