@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { getDatesInRange, SHIFT_TYPES, getShift, dayOfWeek } from "@/utils/attendanceUtils";
-import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 
 const WFH_OPTIONS = ["Onsite", "WFH"];
 const SHIFTS_WITH_WFH = ["Opener", "Mid", "Closer", "Night", "Custom"];
@@ -59,27 +59,33 @@ function CellEditor({ cell, onClose, onSave }) {
   );
 }
 
-function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSpreadDragEnter, isSpreading }) {
+function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSpreadDragEnter, isSpreading, spreadAxis }) {
   const [dragOver, setDragOver] = useState(false);
   const [hovered, setHovered] = useState(false);
   const shift = cell?.shift ? getShift(cell.shift) : null;
   const showWfh = shift && SHIFTS_WITH_WFH.includes(shift.key);
 
+  const spreadingClass = isSpreading
+    ? spreadAxis === "vertical"
+      ? "bg-purple-50 ring-2 ring-purple-400"
+      : "bg-blue-50 ring-2 ring-blue-400"
+    : "";
+
   return (
     <td
       onDragOver={e => { e.preventDefault(); setDragOver(true); onSpreadDragEnter(); }}
-      onDragLeave={() => setDragOver(false)}
+      onDragLeave={() => { setDragOver(false); }}
       onDrop={e => { e.preventDefault(); setDragOver(false); onDrop(); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={`border border-gray-200 p-1 min-w-[72px] align-top transition-all relative
-        ${dragOver ? "bg-yellow-50 ring-2 ring-yellow-400" : ""}
-        ${missing ? "ring-2 ring-red-400 bg-red-50" : ""}
-        ${isSpreading ? "bg-blue-50 ring-2 ring-blue-300" : ""}
+        ${dragOver && !isSpreading ? "bg-yellow-50 ring-2 ring-yellow-400" : ""}
+        ${missing && !isSpreading ? "ring-2 ring-red-400 bg-red-50" : ""}
+        ${spreadingClass}
       `}
     >
       {shift ? (
-        <div className="relative group">
+        <div className="relative">
           <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm">
             {cell.shift === "Custom" ? (cell.customLabel || "Custom") : shift.label}
             {cell.customTime && <div className="text-xs opacity-80">{cell.customTime}</div>}
@@ -98,21 +104,41 @@ function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSp
           {/* Spread handles — shown on hover */}
           {hovered && (
             <>
+              {/* Left */}
               <div
                 draggable
                 onDragStart={e => { e.stopPropagation(); onSpreadDragStart("left"); }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 bg-white border border-gray-300 rounded-full p-0.5 shadow cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:border-blue-400 transition-all"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2.5 z-20 bg-white border border-blue-300 rounded-full p-0.5 shadow-md cursor-grab active:cursor-grabbing hover:bg-blue-50 transition-all"
                 title="Drag left to fill"
               >
-                <ChevronLeft className="w-3 h-3 text-gray-500" />
+                <ChevronLeft className="w-3 h-3 text-blue-500" />
               </div>
+              {/* Right */}
               <div
                 draggable
                 onDragStart={e => { e.stopPropagation(); onSpreadDragStart("right"); }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 bg-white border border-gray-300 rounded-full p-0.5 shadow cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:border-blue-400 transition-all"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2.5 z-20 bg-white border border-blue-300 rounded-full p-0.5 shadow-md cursor-grab active:cursor-grabbing hover:bg-blue-50 transition-all"
                 title="Drag right to fill"
               >
-                <ChevronRight className="w-3 h-3 text-gray-500" />
+                <ChevronRight className="w-3 h-3 text-blue-500" />
+              </div>
+              {/* Up */}
+              <div
+                draggable
+                onDragStart={e => { e.stopPropagation(); onSpreadDragStart("up"); }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2.5 z-20 bg-white border border-purple-300 rounded-full p-0.5 shadow-md cursor-grab active:cursor-grabbing hover:bg-purple-50 transition-all"
+                title="Drag up to fill"
+              >
+                <ChevronUp className="w-3 h-3 text-purple-500" />
+              </div>
+              {/* Down */}
+              <div
+                draggable
+                onDragStart={e => { e.stopPropagation(); onSpreadDragStart("down"); }}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2.5 z-20 bg-white border border-purple-300 rounded-full p-0.5 shadow-md cursor-grab active:cursor-grabbing hover:bg-purple-50 transition-all"
+                title="Drag down to fill"
+              >
+                <ChevronDown className="w-3 h-3 text-purple-500" />
               </div>
             </>
           )}
@@ -136,9 +162,12 @@ export default function AttendanceScheduler() {
   const [customEditing, setCustomEditing] = useState(null); // {empId, date}
   const [showMissing, setShowMissing] = useState(false);
 
-  // Spread-drag state: dragging a filled cell's handle across dates
-  const spreadRef = useRef(null); // { empId, dateIndex, direction, cell }
-  const [spreadRange, setSpreadRange] = useState(null); // { empId, fromIdx, toIdx }
+  // Spread-drag state: dragging a filled cell's handle across dates or employees
+  // axis: "horizontal" | "vertical"
+  // horizontal: { empId, dateIdx, fromIdx, toIdx }
+  // vertical:   { dateIdx, empIdx, fromEmpIdx, toEmpIdx }
+  const spreadRef = useRef(null);
+  const [spreadRange, setSpreadRange] = useState(null);
 
   useEffect(() => {
     base44.entities.AttendanceProposal.filter({ id }).then(([p]) => {
@@ -186,26 +215,44 @@ export default function AttendanceScheduler() {
 
   const missingSet = showMissing ? new Set(getMissingCells()) : new Set();
 
-  const handleSpreadDragStart = (empId, dateIdx, direction) => {
-    spreadRef.current = { empId, dateIdx, direction };
-    setSpreadRange({ empId, fromIdx: dateIdx, toIdx: dateIdx });
+  const handleSpreadDragStart = (empId, empIdx, dateIdx, direction) => {
+    const axis = (direction === "left" || direction === "right") ? "horizontal" : "vertical";
+    spreadRef.current = { empId, empIdx, dateIdx, direction, axis };
+    if (axis === "horizontal") {
+      setSpreadRange({ axis, empId, empIdx, dateIdx, fromIdx: dateIdx, toIdx: dateIdx });
+    } else {
+      setSpreadRange({ axis, empId, empIdx, dateIdx, fromEmpIdx: empIdx, toEmpIdx: empIdx });
+    }
   };
 
-  const handleSpreadDragEnter = (empId, dateIdx) => {
-    if (!spreadRef.current || spreadRef.current.empId !== empId) return;
-    const { dateIdx: originIdx } = spreadRef.current;
-    setSpreadRange({ empId, fromIdx: Math.min(originIdx, dateIdx), toIdx: Math.max(originIdx, dateIdx) });
+  const handleSpreadDragEnter = (empId, empIdx, dateIdx) => {
+    if (!spreadRef.current) return;
+    const { axis, empIdx: originEmpIdx, dateIdx: originDateIdx } = spreadRef.current;
+    if (axis === "horizontal") {
+      if (spreadRef.current.empId !== empId) return;
+      setSpreadRange(r => ({ ...r, fromIdx: Math.min(originDateIdx, dateIdx), toIdx: Math.max(originDateIdx, dateIdx) }));
+    } else {
+      if (spreadRef.current.dateIdx !== dateIdx) return;
+      setSpreadRange(r => ({ ...r, fromEmpIdx: Math.min(originEmpIdx, empIdx), toEmpIdx: Math.max(originEmpIdx, empIdx) }));
+    }
   };
 
-  const handleSpreadDrop = () => {
+  const handleSpreadDrop = (empId, empIdx, dateIdx) => {
     if (!spreadRef.current || !spreadRange) return;
-    const { empId, dateIdx: originIdx } = spreadRef.current;
-    const sourceCell = schedule[empId]?.[dates[originIdx]];
-    if (!sourceCell) return;
-    const { fromIdx, toIdx } = spreadRange;
-    for (let i = fromIdx; i <= toIdx; i++) {
-      if (i !== originIdx) {
-        setCell(empId, dates[i], { ...sourceCell });
+    const { axis, empId: originEmpId, empIdx: originEmpIdx, dateIdx: originDateIdx } = spreadRef.current;
+    if (axis === "horizontal") {
+      const sourceCell = schedule[originEmpId]?.[dates[originDateIdx]];
+      if (!sourceCell) return;
+      const { fromIdx, toIdx } = spreadRange;
+      for (let i = fromIdx; i <= toIdx; i++) {
+        setCell(originEmpId, dates[i], { ...sourceCell });
+      }
+    } else {
+      const sourceCell = schedule[originEmpId]?.[dates[originDateIdx]];
+      if (!sourceCell) return;
+      const { fromEmpIdx, toEmpIdx } = spreadRange;
+      for (let i = fromEmpIdx; i <= toEmpIdx; i++) {
+        setCell(proposal.employees[i].id, dates[originDateIdx], { ...sourceCell });
       }
     }
     spreadRef.current = null;
@@ -255,39 +302,43 @@ export default function AttendanceScheduler() {
             </tr>
           </thead>
           <tbody>
-            {proposal.employees.map((emp, i) => (
-              <tr key={emp.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+            {proposal.employees.map((emp, empIdx) => (
+              <tr key={emp.id} className={empIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
                 <td className="sticky left-0 z-10 bg-inherit px-4 py-2 font-semibold text-gray-800 text-sm whitespace-nowrap border-r border-gray-200">
                   {emp.name}
                   {emp.position && <div className="text-xs text-gray-400 font-normal">{emp.position}</div>}
                 </td>
-                {dates.map((d, dIdx) => (
-                  <ShiftCell
-                    key={d}
-                    cell={schedule[emp.id]?.[d] || null}
-                    missing={missingSet.has(`${emp.id}__${d}`)}
-                    isSpreading={
-                      spreadRange &&
-                      spreadRange.empId === emp.id &&
-                      dIdx >= spreadRange.fromIdx &&
-                      dIdx <= spreadRange.toIdx
-                    }
-                    onDrop={() => {
-                      if (spreadRef.current) { handleSpreadDrop(); return; }
-                      if (!dragShift) return;
-                      if (dragShift === "Custom") {
-                        setCustomEditing({ empId: emp.id, date: d });
-                        setCell(emp.id, d, { shift: "Custom", customLabel: "", customTime: "", wfh: "Onsite" });
-                      } else {
-                        const needsWfh = SHIFTS_WITH_WFH.includes(dragShift);
-                        setCell(emp.id, d, { shift: dragShift, wfh: needsWfh ? "Onsite" : undefined });
-                      }
-                    }}
-                    onWfhChange={val => setCell(emp.id, d, { wfh: val })}
-                    onSpreadDragStart={dir => handleSpreadDragStart(emp.id, dIdx, dir)}
-                    onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, dIdx)}
-                  />
-                ))}
+                {dates.map((d, dIdx) => {
+                  const isHSpread = spreadRange?.axis === "horizontal" &&
+                    spreadRange.empId === emp.id &&
+                    dIdx >= spreadRange.fromIdx && dIdx <= spreadRange.toIdx;
+                  const isVSpread = spreadRange?.axis === "vertical" &&
+                    spreadRange.dateIdx === dIdx &&
+                    empIdx >= spreadRange.fromEmpIdx && empIdx <= spreadRange.toEmpIdx;
+                  return (
+                    <ShiftCell
+                      key={d}
+                      cell={schedule[emp.id]?.[d] || null}
+                      missing={missingSet.has(`${emp.id}__${d}`)}
+                      isSpreading={isHSpread || isVSpread}
+                      spreadAxis={isVSpread ? "vertical" : "horizontal"}
+                      onDrop={() => {
+                        if (spreadRef.current) { handleSpreadDrop(emp.id, empIdx, dIdx); return; }
+                        if (!dragShift) return;
+                        if (dragShift === "Custom") {
+                          setCustomEditing({ empId: emp.id, date: d });
+                          setCell(emp.id, d, { shift: "Custom", customLabel: "", customTime: "", wfh: "Onsite" });
+                        } else {
+                          const needsWfh = SHIFTS_WITH_WFH.includes(dragShift);
+                          setCell(emp.id, d, { shift: dragShift, wfh: needsWfh ? "Onsite" : undefined });
+                        }
+                      }}
+                      onWfhChange={val => setCell(emp.id, d, { wfh: val })}
+                      onSpreadDragStart={dir => handleSpreadDragStart(emp.id, empIdx, dIdx, dir)}
+                      onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, empIdx, dIdx)}
+                    />
+                  );
+                })}
               </tr>
             ))}
           </tbody>
