@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { getDatesInRange, SHIFT_TYPES, getShift, dayOfWeek } from "@/utils/attendanceUtils";
-import { Loader2, Send, AlertCircle } from "lucide-react";
+import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 const WFH_OPTIONS = ["Onsite", "WFH"];
 const SHIFTS_WITH_WFH = ["Opener", "Mid", "Closer", "Night", "Custom"];
@@ -59,32 +59,62 @@ function CellEditor({ cell, onClose, onSave }) {
   );
 }
 
-function ShiftCell({ cell, onDrop, onWfhChange, missing }) {
+function ShiftCell({ cell, onDrop, onWfhChange, missing, onSpreadDragStart, onSpreadDragEnter, isSpreading }) {
   const [dragOver, setDragOver] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const shift = cell?.shift ? getShift(cell.shift) : null;
   const showWfh = shift && SHIFTS_WITH_WFH.includes(shift.key);
 
   return (
     <td
-      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+      onDragOver={e => { e.preventDefault(); setDragOver(true); onSpreadDragEnter(); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={e => { e.preventDefault(); setDragOver(false); onDrop(); }}
-      className={`border border-gray-200 p-1 min-w-[72px] align-top transition-all ${dragOver ? "bg-yellow-50 ring-2 ring-yellow-400" : ""} ${missing ? "ring-2 ring-red-400 bg-red-50" : ""}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`border border-gray-200 p-1 min-w-[72px] align-top transition-all relative
+        ${dragOver ? "bg-yellow-50 ring-2 ring-yellow-400" : ""}
+        ${missing ? "ring-2 ring-red-400 bg-red-50" : ""}
+        ${isSpreading ? "bg-blue-50 ring-2 ring-blue-300" : ""}
+      `}
     >
       {shift ? (
-        <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm">
-          {cell.shift === "Custom" ? (cell.customLabel || "Custom") : shift.label}
-          {cell.customTime && <div className="text-xs opacity-80">{cell.customTime}</div>}
-          {showWfh && (
-            <select
-              value={cell.wfh || "Onsite"}
-              onChange={e => onWfhChange(e.target.value)}
-              onClick={e => e.stopPropagation()}
-              style={{ background: "rgba(255,255,255,0.2)", color: shift.text, border: "none" }}
-              className="mt-1 w-full text-xs rounded font-semibold cursor-pointer"
-            >
-              {WFH_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
+        <div className="relative group">
+          <div style={{ background: shift.color, color: shift.text }} className="rounded-lg px-2 py-1 text-center text-xs font-bold shadow-sm">
+            {cell.shift === "Custom" ? (cell.customLabel || "Custom") : shift.label}
+            {cell.customTime && <div className="text-xs opacity-80">{cell.customTime}</div>}
+            {showWfh && (
+              <select
+                value={cell.wfh || "Onsite"}
+                onChange={e => onWfhChange(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                style={{ background: "rgba(255,255,255,0.2)", color: shift.text, border: "none" }}
+                className="mt-1 w-full text-xs rounded font-semibold cursor-pointer"
+              >
+                {WFH_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            )}
+          </div>
+          {/* Spread handles — shown on hover */}
+          {hovered && (
+            <>
+              <div
+                draggable
+                onDragStart={e => { e.stopPropagation(); onSpreadDragStart("left"); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 bg-white border border-gray-300 rounded-full p-0.5 shadow cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:border-blue-400 transition-all"
+                title="Drag left to fill"
+              >
+                <ChevronLeft className="w-3 h-3 text-gray-500" />
+              </div>
+              <div
+                draggable
+                onDragStart={e => { e.stopPropagation(); onSpreadDragStart("right"); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 bg-white border border-gray-300 rounded-full p-0.5 shadow cursor-grab active:cursor-grabbing hover:bg-blue-50 hover:border-blue-400 transition-all"
+                title="Drag right to fill"
+              >
+                <ChevronRight className="w-3 h-3 text-gray-500" />
+              </div>
+            </>
           )}
         </div>
       ) : (
@@ -105,6 +135,10 @@ export default function AttendanceScheduler() {
   const [dragShift, setDragShift] = useState(null);
   const [customEditing, setCustomEditing] = useState(null); // {empId, date}
   const [showMissing, setShowMissing] = useState(false);
+
+  // Spread-drag state: dragging a filled cell's handle across dates
+  const spreadRef = useRef(null); // { empId, dateIndex, direction, cell }
+  const [spreadRange, setSpreadRange] = useState(null); // { empId, fromIdx, toIdx }
 
   useEffect(() => {
     base44.entities.AttendanceProposal.filter({ id }).then(([p]) => {
@@ -152,6 +186,32 @@ export default function AttendanceScheduler() {
 
   const missingSet = showMissing ? new Set(getMissingCells()) : new Set();
 
+  const handleSpreadDragStart = (empId, dateIdx, direction) => {
+    spreadRef.current = { empId, dateIdx, direction };
+    setSpreadRange({ empId, fromIdx: dateIdx, toIdx: dateIdx });
+  };
+
+  const handleSpreadDragEnter = (empId, dateIdx) => {
+    if (!spreadRef.current || spreadRef.current.empId !== empId) return;
+    const { dateIdx: originIdx } = spreadRef.current;
+    setSpreadRange({ empId, fromIdx: Math.min(originIdx, dateIdx), toIdx: Math.max(originIdx, dateIdx) });
+  };
+
+  const handleSpreadDrop = () => {
+    if (!spreadRef.current || !spreadRange) return;
+    const { empId, dateIdx: originIdx } = spreadRef.current;
+    const sourceCell = schedule[empId]?.[dates[originIdx]];
+    if (!sourceCell) return;
+    const { fromIdx, toIdx } = spreadRange;
+    for (let i = fromIdx; i <= toIdx; i++) {
+      if (i !== originIdx) {
+        setCell(empId, dates[i], { ...sourceCell });
+      }
+    }
+    spreadRef.current = null;
+    setSpreadRange(null);
+  };
+
   return (
     <div className="space-y-4 pb-20">
       {/* Header */}
@@ -178,7 +238,10 @@ export default function AttendanceScheduler() {
       )}
 
       {/* Grid */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+      <div
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto"
+        onDragEnd={() => { spreadRef.current = null; setSpreadRange(null); }}
+      >
         <table className="border-collapse text-sm">
           <thead>
             <tr className="bg-blue-900 text-white">
@@ -198,12 +261,19 @@ export default function AttendanceScheduler() {
                   {emp.name}
                   {emp.position && <div className="text-xs text-gray-400 font-normal">{emp.position}</div>}
                 </td>
-                {dates.map(d => (
+                {dates.map((d, dIdx) => (
                   <ShiftCell
                     key={d}
                     cell={schedule[emp.id]?.[d] || null}
                     missing={missingSet.has(`${emp.id}__${d}`)}
+                    isSpreading={
+                      spreadRange &&
+                      spreadRange.empId === emp.id &&
+                      dIdx >= spreadRange.fromIdx &&
+                      dIdx <= spreadRange.toIdx
+                    }
                     onDrop={() => {
+                      if (spreadRef.current) { handleSpreadDrop(); return; }
                       if (!dragShift) return;
                       if (dragShift === "Custom") {
                         setCustomEditing({ empId: emp.id, date: d });
@@ -214,6 +284,8 @@ export default function AttendanceScheduler() {
                       }
                     }}
                     onWfhChange={val => setCell(emp.id, d, { wfh: val })}
+                    onSpreadDragStart={dir => handleSpreadDragStart(emp.id, dIdx, dir)}
+                    onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, dIdx)}
                   />
                 ))}
               </tr>
