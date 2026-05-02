@@ -54,35 +54,44 @@ Deno.serve(async (req) => {
     ? `<p>Hello ${leaderName},</p><p>Your attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been rejected by HR.</p><p><strong>Reason:</strong> Test rejection: Please review the schedule and resubmit.</p><p>Regards,<br>${companyName} HR</p>`
     : `<p>Hello ${leaderName},</p><p>Your attendance proposal for ${companyName} / ${branchName} / ${deptName} / ${teamName} covering ${periodStart}–${periodEnd} has been approved by HR.</p><p>Please find the approved attendance schedule details below.</p><p>Regards,<br>${companyName} HR</p>`;
 
-  // Build simple HTML table for schedule
+  // Build professional HTML table for schedule
   const htmlSchedule = `
-    <h2>APPROVED ATTENDANCE PROPOSAL</h2>
-    <p><strong>Company:</strong> ${companyName}</p>
-    <p><strong>Branch:</strong> ${branchName}</p>
-    <p><strong>Department:</strong> ${deptName}</p>
-    <p><strong>Team:</strong> ${teamName}</p>
-    <p><strong>Leader:</strong> ${leaderName}</p>
-    <p><strong>Period:</strong> ${periodStart} to ${periodEnd}</p>
-    <table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%;">
-      <tr style="background-color: #f0f0f0;">
-        <th>Employee</th>
-        <th>2025-05-16</th>
-        <th>2025-05-17</th>
-        <th>2025-05-18</th>
-      </tr>
-      <tr>
-        <td>John Doe (Team Lead)</td>
-        <td>Opener</td>
-        <td>Mid</td>
-        <td>Closer</td>
-      </tr>
-      <tr>
-        <td>Jane Smith (Supervisor)</td>
-        <td>Mid</td>
-        <td>Closer</td>
-        <td>Opener</td>
-      </tr>
+    <h1 style="font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">APPROVED ATTENDANCE PROPOSAL</h1>
+    
+    <div style="margin-bottom: 20px; line-height: 1.8;">
+      <p><strong>Company:</strong> ${companyName}</p>
+      <p><strong>Branch:</strong> ${branchName}</p>
+      <p><strong>Department:</strong> ${deptName}</p>
+      <p><strong>Team:</strong> ${teamName}</p>
+      <p><strong>Leader:</strong> ${leaderName}</p>
+      <p><strong>Period:</strong> ${periodStart} to ${periodEnd}</p>
+    </div>
+    
+    <table border="1" cellpadding="12" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: Arial, sans-serif;">
+      <thead>
+        <tr style="background-color: #2d3e50; color: white; font-weight: bold;">
+          <th style="text-align: left; padding: 12px; border: 1px solid #ddd;">Employee</th>
+          <th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-16<br><span style="font-weight: normal; font-size: 12px;">Fri</span></th>
+          <th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-17<br><span style="font-weight: normal; font-size: 12px;">Sat</span></th>
+          <th style="text-align: center; padding: 12px; border: 1px solid #ddd;">2025-05-18<br><span style="font-weight: normal; font-size: 12px;">Sun</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background-color: #f9f9f9;">
+          <td style="padding: 12px; border: 1px solid #ddd;">John Doe (Team Lead)</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Opener</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: #e67e22;">Mid</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Closer</td>
+        </tr>
+        <tr style="background-color: #ffffff;">
+          <td style="padding: 12px; border: 1px solid #ddd;">Jane Smith (Supervisor)</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center; color: #e67e22;">Mid</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Closer</td>
+          <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">Opener</td>
+        </tr>
+      </tbody>
     </table>
+    
     <p style="color: #666; font-size: 12px; margin-top: 20px;">Generated on ${new Date().toISOString()}</p>
   `;
 
