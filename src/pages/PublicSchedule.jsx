@@ -86,13 +86,10 @@ export default function PublicSchedule() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            Attendance Schedule
-          </h1>
-          <p className="text-gray-600 mb-4">
-            <span className="font-semibold">{decodeURIComponent(branch)}</span> • <span className="font-semibold">{decodeURIComponent(department)}</span>
-          </p>
+         <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 mb-6">
+           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+             Schedule Dashboard
+           </h1>
 
           {/* Month Filter */}
           <div className="flex items-center gap-3 flex-wrap">
