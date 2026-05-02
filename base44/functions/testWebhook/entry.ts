@@ -71,11 +71,11 @@ Deno.serve(async (req) => {
   const periodDates = getAllDates(periodStart, periodEnd);
   
   // Build dynamic table header with all dates
-  let tableHeaderHtml = '<tr style="background-color: #2c3e50; color: white; font-weight: bold;"><th style="text-align: left; padding: 10px 8px; border: 1px solid #bbb; font-size: 13px;">Employee</th>';
+  let tableHeaderHtml = '<tr style="background-color: #2c3e50; color: white; font-weight: bold;"><th style="text-align: left; padding: 12px 10px; border: 1px solid #999; font-size: 13px; min-width: 160px;">Employee</th>';
   periodDates.forEach(date => {
     const datePart = date.slice(5);
     const day = getDayOfWeek(date);
-    tableHeaderHtml += `<th style="text-align: center; padding: 10px 6px; border: 1px solid #bbb; font-size: 12px;"><strong>${datePart}</strong><br><span style="font-weight: normal; font-size: 11px;">${day}</span></th>`;
+    tableHeaderHtml += `<th style="text-align: center; padding: 10px 8px; border: 1px solid #999; font-size: 12px; min-width: 70px;"><strong>${datePart}</strong><br><span style="font-weight: normal; font-size: 10px;">${day}</span></th>`;
   });
   tableHeaderHtml += '</tr>';
 
@@ -87,19 +87,20 @@ Deno.serve(async (req) => {
   
   let tableBodyHtml = '';
   employees.forEach((emp, idx) => {
-    const bgColor = idx % 2 === 0 ? '#f5f5f5' : '#ffffff';
-    tableBodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 10px 8px; border: 1px solid #ddd; font-weight: 600; font-size: 13px;">${emp.name}</td>`;
+    const bgColor = idx % 2 === 0 ? '#f8f8f8' : '#ffffff';
+    tableBodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 12px 10px; border: 1px solid #ddd; font-weight: 600; font-size: 13px;">${emp.name}</td>`;
     
     periodDates.forEach((date, dateIdx) => {
       const shifts = ['Opener', 'Mid', 'Closer'];
       const shift = shifts[(idx + dateIdx) % shifts.length];
       const shiftColor = shift === 'Mid' ? '#ff9800' : '#333';
-      tableBodyHtml += `<td style="padding: 8px 6px; border: 1px solid #ddd; text-align: center; font-size: 12px; color: ${shiftColor};">${shift}</td>`;
+      const fontWeight = shift === 'Mid' ? '600' : '400';
+      tableBodyHtml += `<td style="padding: 10px 8px; border: 1px solid #ddd; text-align: center; font-size: 12px; color: ${shiftColor}; font-weight: ${fontWeight};">${shift}</td>`;
     });
     tableBodyHtml += '</tr>';
   });
 
-  const tableHtml = `<table border="1" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0; font-family: Arial, sans-serif; font-size: 12px;">${tableHeaderHtml}${tableBodyHtml}</table>`;
+  const tableHtml = `<table cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0; font-family: Arial, sans-serif; border: 1px solid #999;">${tableHeaderHtml}${tableBodyHtml}</table>`;
 
   const emailBody = isRejection
     ? `<p>Hello ${leaderName},</p><p>Your attendance proposal for <strong>${companyName} / ${branchName} / ${deptName} / ${teamName}</strong> covering <strong>${periodStart}–${periodEnd}</strong> has been rejected by HR.</p><p><strong style="color: #d32f2f;">Reason:</strong> Test rejection: Please review the schedule and resubmit.</p><hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;"><p style="color: #666; font-size: 12px;">Please contact HR for further clarification.</p><p>Regards,<br><strong>${companyName} HR</strong></p>`
