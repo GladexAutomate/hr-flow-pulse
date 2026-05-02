@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { getDatesInRange, getShift, dayOfWeek, generateApprovedAttendanceHtml, generateRejectedAttendanceHtml } from "@/utils/attendanceUtils";
-import { CheckCircle, XCircle, Eye, Loader2, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Loader2, Calendar, Send } from "lucide-react";
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
 
 const STATUS_COLORS = {
@@ -62,6 +62,7 @@ function ProposalCard({ proposal, onAction }) {
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleApprove = async () => {
     setProcessing(true);
@@ -77,6 +78,16 @@ function ProposalCard({ proposal, onAction }) {
     setProcessing(false);
     setShowRejectConfirm(false);
     setShowReject(false);
+  };
+
+  const handleResendNotification = async () => {
+    setResending(true);
+    if (proposal.status === "Approved") {
+      await onAction("resend-approved", proposal, null);
+    } else if (proposal.status === "Rejected") {
+      await onAction("resend-rejected", proposal, null);
+    }
+    setResending(false);
   };
 
   return (
@@ -109,6 +120,12 @@ function ProposalCard({ proposal, onAction }) {
                 <XCircle className="w-3.5 h-3.5" />Reject
               </button>
             </>
+          )}
+          {(proposal.status === "Approved" || proposal.status === "Rejected") && (
+            <button disabled={resending} onClick={handleResendNotification}
+              className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
+              {resending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}Resend Notification
+            </button>
           )}
         </div>
       </div>
@@ -247,7 +264,7 @@ export default function AttendanceRequests() {
         reviewed_by: user?.email,
         reviewed_at: new Date().toISOString(),
       });
-    } else {
+    } else if (action === "reject") {
       await base44.entities.AttendanceProposal.update(proposal.id, {
         status: "Rejected",
         rejection_note: rejectionNote,
@@ -271,6 +288,43 @@ export default function AttendanceRequests() {
         rejection_note: rejectionNote,
         reviewed_by: user?.email,
         reviewed_at: new Date().toISOString(),
+      });
+    } else if (action === "resend-approved") {
+      fireWebhook("attendance_approved_webhook", {
+        event: "attendance_approved",
+        proposal_id: proposal.id,
+        team_name: proposal.team_name,
+        leader_name: proposal.leader_name,
+        leader_email: proposal.leader_email,
+        company_name: proposal.company_name,
+        branch_name: proposal.branch_name,
+        department_name: proposal.department_name,
+        period_label: proposal.period_label,
+        period_start: proposal.period_start,
+        period_end: proposal.period_end,
+        employees: proposal.employees || [],
+        schedule: proposal.schedule || {},
+        reviewed_by: proposal.reviewed_by,
+        reviewed_at: proposal.reviewed_at,
+      });
+    } else if (action === "resend-rejected") {
+      fireWebhook("attendance_rejected_webhook", {
+        event: "attendance_rejected",
+        proposal_id: proposal.id,
+        team_name: proposal.team_name,
+        leader_name: proposal.leader_name,
+        leader_email: proposal.leader_email,
+        company_name: proposal.company_name,
+        branch_name: proposal.branch_name,
+        department_name: proposal.department_name,
+        period_label: proposal.period_label,
+        period_start: proposal.period_start,
+        period_end: proposal.period_end,
+        employees: proposal.employees || [],
+        schedule: proposal.schedule || {},
+        rejection_note: proposal.rejection_note,
+        reviewed_by: proposal.reviewed_by,
+        reviewed_at: proposal.reviewed_at,
       });
     }
     load();
