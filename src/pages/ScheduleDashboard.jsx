@@ -81,7 +81,9 @@ export default function ScheduleDashboard() {
   }, []);
 
   const filtered = proposals.filter(p => {
-    const monthMatch = p.period_start?.startsWith(selectedMonth);
+    // Extract month from period_start (YYYY-MM-DD format)
+    const periodMonth = p.period_start?.slice(0, 7);
+    const monthMatch = periodMonth === selectedMonth;
     const branchMatch = selectedBranch === "All" || p.branch_name === selectedBranch;
     const deptMatch = selectedDept === "All" || p.department_name === selectedDept;
     return monthMatch && branchMatch && deptMatch;
