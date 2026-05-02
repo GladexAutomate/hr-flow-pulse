@@ -49,26 +49,8 @@ export default function WebhookSettings() {
     setTesting(t => ({ ...t, [key]: true }));
     setTestResult(r => ({ ...r, [key]: null }));
     try {
-      await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event: key,
-          test: true,
-          proposal_id: "test-001",
-          team_name: "Sample Team",
-          leader_name: "Juan dela Cruz",
-          leader_email: "juan@example.com",
-          company_name: "Sample Company",
-          branch_name: "Main Branch",
-          department_name: "Operations",
-          period_label: "May 16–31, 2025",
-          period_start: "2025-05-16",
-          period_end: "2025-05-31",
-          message: "This is a test webhook fired from HR Tracker Settings.",
-        }),
-      });
-      setTestResult(r => ({ ...r, [key]: "ok" }));
+      const res = await base44.functions.invoke("testWebhook", { url, key });
+      setTestResult(r => ({ ...r, [key]: res.data?.ok ? "ok" : "error" }));
     } catch {
       setTestResult(r => ({ ...r, [key]: "error" }));
     }
