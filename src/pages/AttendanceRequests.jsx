@@ -228,6 +228,7 @@ export default function AttendanceRequests() {
       return;
     }
     console.log(`🔄 Sending webhook to ${webhookKey}:`, url);
+    console.log(`📦 Payload:`, JSON.stringify(payload, null, 2));
     try {
       const response = await fetch(url, {
         method: "POST",
@@ -235,6 +236,7 @@ export default function AttendanceRequests() {
         body: JSON.stringify(payload),
       });
       console.log(`✅ Webhook sent successfully (${response.status})`);
+      console.log(`📋 Response:`, response.statusText);
     } catch (error) {
       console.error(`❌ Webhook failed: ${error.message}`);
     }
