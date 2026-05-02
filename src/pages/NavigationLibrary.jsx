@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export default function NavigationLibrary() {
   const [branches, setBranches] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [branchDepts, setBranchDepts] = useState({});
   const [copiedId, setCopiedId] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,20 +16,25 @@ export default function NavigationLibrary() {
         status: "Approved"
       }, "-updated_date", 500);
 
-      // Extract unique branch/department combinations
-      const branchDeptSet = new Set();
+      // Group departments by branch
+      const branchMap = {};
       proposals.forEach(p => {
         if (p.branch_name && p.department_name) {
-          branchDeptSet.add(JSON.stringify({ branch: p.branch_name, department: p.department_name }));
+          if (!branchMap[p.branch_name]) {
+            branchMap[p.branch_name] = new Set();
+          }
+          branchMap[p.branch_name].add(p.department_name);
         }
       });
 
-      const combined = Array.from(branchDeptSet)
-        .map(item => JSON.parse(item))
-        .sort((a, b) => a.branch.localeCompare(b.branch));
+      // Convert Sets to sorted arrays
+      const deptMap = {};
+      Object.keys(branchMap).forEach(branch => {
+        deptMap[branch] = Array.from(branchMap[branch]).sort();
+      });
 
-      setBranches([...new Set(combined.map(x => x.branch))].sort());
-      setDepartments([...new Set(combined.map(x => x.department))].sort());
+      setBranches(Object.keys(branchMap).sort());
+      setBranchDepts(deptMap);
       setLoading(false);
     };
     load();
@@ -159,16 +164,7 @@ export default function NavigationLibrary() {
                 </div>
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Get unique departments for this branch */}
-                    {[...new Set(
-                      (async () => {
-                        const proposals = await base44.entities.AttendanceProposal.filter({
-                          status: "Approved",
-                          branch_name: branch
-                        });
-                        return proposals.map(p => p.department_name);
-                      })()
-                    )].map(dept => {
+                    {(branchDepts[branch] || []).map(dept => {
                       const scheduleUrl = `${getBaseUrl()}/schedule/${encodeURIComponent(branch)}/${encodeURIComponent(dept)}`;
                       return (
                         <ScheduleLinkCard
