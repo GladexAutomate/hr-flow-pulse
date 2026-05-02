@@ -180,7 +180,7 @@ export default function AttendanceProposalForm() {
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-40 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-200 text-base"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
-            Proceed to Schedule Creation
+            Schedule Now
           </button>
         </div>
       </div>
