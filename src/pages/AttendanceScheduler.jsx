@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { getDatesInRange, SHIFT_TYPES, getShift, dayOfWeek } from "@/utils/attendanceUtils";
-import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Loader2, Send, AlertCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const WFH_OPTIONS = ["Onsite", "WFH"];
 const SHIFTS_WITH_WFH = ["Opener", "Mid", "Closer", "Night", "Custom"];
@@ -170,6 +171,7 @@ export default function AttendanceScheduler() {
   const [dragShift, setDragShift] = useState(null);
   const [customEditing, setCustomEditing] = useState(null); // {empId, date}
   const [showMissing, setShowMissing] = useState(false);
+  const [employees, setEmployees] = useState([]);
 
   // Spread-drag state: dragging a filled cell's handle across dates or employees
   // axis: "horizontal" | "vertical"
@@ -182,6 +184,7 @@ export default function AttendanceScheduler() {
     base44.entities.AttendanceProposal.filter({ id }).then(([p]) => {
       if (p) {
         setProposal(p);
+        setEmployees(p.employees || []);
         setSchedule(p.schedule || {});
         setRemarks(p.remarks || "");
       }
@@ -203,12 +206,20 @@ export default function AttendanceScheduler() {
 
   const getMissingCells = () => {
     const missing = [];
-    proposal.employees.forEach(emp => {
+    employees.forEach(emp => {
       dates.forEach(d => {
         if (!(schedule[emp.id]?.[d]?.shift)) missing.push(`${emp.id}__${d}`);
       });
     });
     return missing;
+  };
+
+  const handleRowDragEnd = (result) => {
+    if (!result.destination) return;
+    const reordered = Array.from(employees);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setEmployees(reordered);
   };
 
   const handleSubmit = async () => {
@@ -261,7 +272,7 @@ export default function AttendanceScheduler() {
       if (!sourceCell) return;
       const { fromEmpIdx, toEmpIdx } = spreadRange;
       for (let i = fromEmpIdx; i <= toEmpIdx; i++) {
-        setCell(proposal.employees[i].id, dates[originDateIdx], { ...sourceCell });
+        setCell(employees[i].id, dates[originDateIdx], { ...sourceCell });
       }
     }
     spreadRef.current = null;
@@ -278,7 +289,7 @@ export default function AttendanceScheduler() {
             <p className="text-sm text-gray-500">{proposal.company_name} / {proposal.branch_name} / {proposal.department_name}</p>
             <p className="text-sm text-gray-500">Leader: <span className="font-medium">{proposal.leader_name}</span></p>
           </div>
-          <div className="text-sm text-gray-500">{proposal.employees.length} employees · {dates.length} days</div>
+          <div className="text-sm text-gray-500">{employees.length} employees · {dates.length} days</div>
         </div>
       </div>
 
@@ -294,70 +305,96 @@ export default function AttendanceScheduler() {
       )}
 
       {/* Grid */}
-      <div
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto"
-        onDragEnd={() => { spreadRef.current = null; setSpreadRange(null); }}
-      >
-        <table className="border-collapse text-sm">
-          <thead>
-            <tr className="bg-blue-900 text-white">
-              <th className="sticky left-0 z-10 bg-blue-900 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide min-w-[140px]">Employee</th>
-              {dates.map(d => (
-                <th key={d} className="px-2 py-3 text-center text-xs font-semibold whitespace-nowrap min-w-[72px]">
-                  <div>{d.slice(5)}</div>
-                  <div className="text-blue-200 font-normal">{dayOfWeek(d)}</div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {proposal.employees.map((emp, empIdx) => (
-              <tr key={emp.id} className={empIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                <td className="sticky left-0 z-10 bg-inherit px-4 py-2 font-semibold text-gray-800 text-sm whitespace-nowrap border-r border-gray-200">
-                  {emp.name}
-                  {emp.position && <div className="text-xs text-gray-400 font-normal">{emp.position}</div>}
-                </td>
-                {dates.map((d, dIdx) => {
-                  const isHSpread = spreadRange?.axis === "horizontal" &&
-                    spreadRange.empId === emp.id &&
-                    dIdx >= spreadRange.fromIdx && dIdx <= spreadRange.toIdx;
-                  const isVSpread = spreadRange?.axis === "vertical" &&
-                    spreadRange.dateIdx === dIdx &&
-                    empIdx >= spreadRange.fromEmpIdx && empIdx <= spreadRange.toEmpIdx;
-                  return (
-                    <ShiftCell
-                      key={d}
-                      cell={schedule[emp.id]?.[d] || null}
-                      missing={missingSet.has(`${emp.id}__${d}`)}
-                      isSpreading={isHSpread || isVSpread}
-                      spreadAxis={isVSpread ? "vertical" : "horizontal"}
-                      onDrop={() => {
-                        if (spreadRef.current) { handleSpreadDrop(emp.id, empIdx, dIdx); return; }
-                        if (!dragShift) return;
-                        if (dragShift === "Custom") {
-                          setCustomEditing({ empId: emp.id, date: d });
-                          setCell(emp.id, d, { shift: "Custom", customLabel: "", customTime: "", wfh: "Onsite" });
-                        } else {
-                          const needsWfh = SHIFTS_WITH_WFH.includes(dragShift);
-                          setCell(emp.id, d, { shift: dragShift, wfh: needsWfh ? "Onsite" : undefined });
-                        }
-                      }}
-                      onWfhChange={val => setCell(emp.id, d, { wfh: val })}
-                      onDelete={() => setSchedule(s => {
-                        const next = { ...s, [emp.id]: { ...(s[emp.id] || {}) } };
-                        delete next[emp.id][d];
-                        return next;
-                      })}
-                      onSpreadDragStart={dir => handleSpreadDragStart(emp.id, empIdx, dIdx, dir)}
-                      onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, empIdx, dIdx)}
-                    />
-                  );
-                })}
+      <DragDropContext onDragEnd={(result) => {
+        // If it's a row reorder (not a spread drag), handle it
+        if (result.type === "ROW") { handleRowDragEnd(result); return; }
+        spreadRef.current = null; setSpreadRange(null);
+      }}>
+        <div
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto"
+          onDragEnd={() => { spreadRef.current = null; setSpreadRange(null); }}
+        >
+          <table className="border-collapse text-sm">
+            <thead>
+              <tr className="bg-blue-900 text-white">
+                <th className="sticky left-0 z-10 bg-blue-900 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide min-w-[160px]">Employee</th>
+                {dates.map(d => (
+                  <th key={d} className="px-2 py-3 text-center text-xs font-semibold whitespace-nowrap min-w-[72px]">
+                    <div>{d.slice(5)}</div>
+                    <div className="text-blue-200 font-normal">{dayOfWeek(d)}</div>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <Droppable droppableId="employees" type="ROW" direction="vertical">
+              {(provided) => (
+                <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                  {employees.map((emp, empIdx) => (
+                    <Draggable key={emp.id} draggableId={emp.id} index={empIdx}>
+                      {(drag, snapshot) => (
+                        <tr
+                          ref={drag.innerRef}
+                          {...drag.draggableProps}
+                          className={`${empIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50"} ${snapshot.isDragging ? "opacity-80 shadow-lg" : ""}`}
+                        >
+                          <td className="sticky left-0 z-10 bg-inherit px-2 py-2 font-semibold text-gray-800 text-sm whitespace-nowrap border-r border-gray-200">
+                            <div className="flex items-center gap-1.5">
+                              <span {...drag.dragHandleProps} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0" title="Drag to reorder">
+                                <GripVertical className="w-4 h-4" />
+                              </span>
+                              <div>
+                                {emp.name}
+                                {emp.position && <div className="text-xs text-gray-400 font-normal">{emp.position}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          {dates.map((d, dIdx) => {
+                            const isHSpread = spreadRange?.axis === "horizontal" &&
+                              spreadRange.empId === emp.id &&
+                              dIdx >= spreadRange.fromIdx && dIdx <= spreadRange.toIdx;
+                            const isVSpread = spreadRange?.axis === "vertical" &&
+                              spreadRange.dateIdx === dIdx &&
+                              empIdx >= spreadRange.fromEmpIdx && empIdx <= spreadRange.toEmpIdx;
+                            return (
+                              <ShiftCell
+                                key={d}
+                                cell={schedule[emp.id]?.[d] || null}
+                                missing={missingSet.has(`${emp.id}__${d}`)}
+                                isSpreading={isHSpread || isVSpread}
+                                spreadAxis={isVSpread ? "vertical" : "horizontal"}
+                                onDrop={() => {
+                                  if (spreadRef.current) { handleSpreadDrop(emp.id, empIdx, dIdx); return; }
+                                  if (!dragShift) return;
+                                  if (dragShift === "Custom") {
+                                    setCustomEditing({ empId: emp.id, date: d });
+                                    setCell(emp.id, d, { shift: "Custom", customLabel: "", customTime: "", wfh: "Onsite" });
+                                  } else {
+                                    const needsWfh = SHIFTS_WITH_WFH.includes(dragShift);
+                                    setCell(emp.id, d, { shift: dragShift, wfh: needsWfh ? "Onsite" : undefined });
+                                  }
+                                }}
+                                onWfhChange={val => setCell(emp.id, d, { wfh: val })}
+                                onDelete={() => setSchedule(s => {
+                                  const next = { ...s, [emp.id]: { ...(s[emp.id] || {}) } };
+                                  delete next[emp.id][d];
+                                  return next;
+                                })}
+                                onSpreadDragStart={dir => handleSpreadDragStart(emp.id, empIdx, dIdx, dir)}
+                                onSpreadDragEnter={() => handleSpreadDragEnter(emp.id, empIdx, dIdx)}
+                              />
+                            );
+                          })}
+                        </tr>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </tbody>
+              )}
+            </Droppable>
+          </table>
+        </div>
+      </DragDropContext>
 
       {/* Remarks */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
