@@ -19,6 +19,7 @@ import EmployeeAttendance from './pages/EmployeeAttendance';
 import AttendanceProposalForm from './pages/AttendanceProposalForm';
 import AttendanceScheduler from './pages/AttendanceScheduler';
 import AttendanceRequests from './pages/AttendanceRequests';
+import AirtableEmployeeList from './pages/AirtableEmployeeList';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -104,6 +105,11 @@ const AuthenticatedApp = () => {
           <Route path="/attendance-requests" element={
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
               <AttendanceRequests />
+            </motion.div>
+          } />
+          <Route path="/airtable-employees" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <AirtableEmployeeList />
             </motion.div>
           } />
           <Route path="/attendance-scheduler/:id" element={
