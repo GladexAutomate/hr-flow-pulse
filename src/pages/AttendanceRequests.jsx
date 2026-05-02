@@ -173,8 +173,8 @@ export default function AttendanceRequests() {
   };
 
   const handleAction = async (action, proposal, rejectionNote) => {
-    // Generate screenshot
-    const screenshotRes = await base44.functions.invoke("generateProposalScreenshot", {
+    // Generate proposal HTML
+    const htmlRes = await base44.functions.invoke("generateProposalScreenshot", {
       proposalData: {
         company_name: proposal.company_name,
         branch_name: proposal.branch_name,
@@ -188,14 +188,14 @@ export default function AttendanceRequests() {
       }
     });
 
-    const screenshotBase64 = screenshotRes.data.base64;
+    const proposalHtml = htmlRes.data.html;
 
     if (action === "approve") {
       const emailBody = `<p>Hello ${proposal.leader_name},</p>
 <p>Your attendance proposal for <strong>${proposal.company_name} / ${proposal.branch_name} / ${proposal.department_name} / ${proposal.team_name}</strong> covering <strong>${proposal.period_start}–${proposal.period_end}</strong> has been <strong style="color: #4caf50;">approved</strong> by HR.</p>
 <p>Please find the approved attendance schedule details below.</p>
 <hr style="border: none; border-top: 2px solid #333; margin: 20px 0;">
-<img src="${screenshotBase64}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0;">
+${proposalHtml}
 <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
 <p>Regards,<br><strong>${proposal.company_name} HR</strong></p>`;
 
@@ -230,7 +230,7 @@ export default function AttendanceRequests() {
 <p><strong style="color: #d32f2f;">Reason:</strong> ${rejectionNote}</p>
 <p>Please review the schedule details below and resubmit your proposal.</p>
 <hr style="border: none; border-top: 2px solid #333; margin: 20px 0;">
-<img src="${screenshotBase64}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0;">
+${proposalHtml}
 <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
 <p>Please contact HR for further clarification.</p>
 <p>Regards,<br><strong>${proposal.company_name} HR</strong></p>`;

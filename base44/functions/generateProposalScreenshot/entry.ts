@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { chromium } from 'npm:playwright@1.40.0';
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
@@ -31,102 +30,59 @@ Deno.serve(async (req) => {
 
   const periodDates = getAllDates(period_start, period_end);
 
+  const getDefaultShift = (idx, dIdx) => {
+    const shifts = ['Opener', 'Mid', 'Closer'];
+    return shifts[(idx + dIdx) % shifts.length];
+  };
+
   // Build header row HTML
-  let headerHtml = '<tr><th>Employee</th>';
+  let headerHtml = '<tr><th style="background-color: #2c3e50; color: white; padding: 12px; text-align: left; border: 1px solid #999; font-weight: bold;">Employee</th>';
   periodDates.forEach(date => {
     const datePart = date.slice(5);
     const day = getDayOfWeek(date);
-    headerHtml += `<th><div class="date">${datePart}</div><div class="day">${day}</div></th>`;
+    headerHtml += `<th style="background-color: #2c3e50; color: white; padding: 12px; text-align: center; border: 1px solid #999; font-weight: bold;"><strong>${datePart}</strong><br><span style="font-weight: normal; font-size: 11px;">${day}</span></th>`;
   });
   headerHtml += '</tr>';
 
   // Build body rows
   let bodyHtml = '';
   employees.forEach((emp, idx) => {
-    bodyHtml += `<tr><td>${emp.name}</td>`;
+    const bgColor = idx % 2 === 0 ? '#f5f5f5' : '#ffffff';
+    bodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 12px 10px; border: 1px solid #ddd; font-weight: 600; font-size: 13px;">${emp.name}</td>`;
     periodDates.forEach((date, dIdx) => {
       const cell = (schedule[emp.id] || {})[date] || {};
       const shift = cell.shift || getDefaultShift(idx, dIdx);
       const shiftLabel = cell.shift === 'Custom' ? (cell.customLabel || 'Custom') : shift;
-      const bgColor = shift === 'Mid' ? '#ff9800' : (shift === 'Opener' ? '#2c3e50' : '#17a2b8');
-      bodyHtml += `<td style="background-color: ${bgColor}; color: white;">${shiftLabel}</td>`;
+      const shiftColor = shift === 'Mid' ? '#ff9800' : '#333';
+      bodyHtml += `<td style="padding: 10px 8px; border: 1px solid #ddd; text-align: center; font-size: 12px; color: ${shiftColor}; font-weight: bold;">${shiftLabel}</td>`;
     });
     bodyHtml += '</tr>';
   });
 
-  const getDefaultShift = (idx, dIdx) => {
-    const shifts = ['Opener', 'Mid', 'Closer'];
-    return shifts[(idx + dIdx) % shifts.length];
-  };
+  // HTML as inline styled table (email-friendly)
+  const tableHtml = `<table cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%; margin: 20px 0; font-family: Arial, sans-serif; border: 1px solid #999;">${headerHtml}${bodyHtml}</table>`;
 
-  // HTML page for screenshot
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    * { margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: white; padding: 40px; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    h1 { font-size: 24px; font-weight: 700; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #2c3e50; }
-    .info { margin-bottom: 25px; line-height: 1.8; font-size: 14px; color: #333; }
-    .info p { margin-bottom: 8px; }
-    .info strong { font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    thead tr { background-color: #2c3e50; color: white; }
-    th { padding: 14px 10px; text-align: center; font-weight: 600; border: 1px solid #2c3e50; }
-    th:first-child { text-align: left; }
-    .date { font-weight: 700; font-size: 13px; }
-    .day { font-weight: 400; font-size: 11px; margin-top: 3px; opacity: 0.9; }
-    td { padding: 12px 10px; text-align: center; border: 1px solid #ddd; font-weight: 500; }
-    td:first-child { text-align: left; font-weight: 600; color: #333; background-color: #f5f5f5; }
-    tbody tr:nth-child(odd) td:first-child { background-color: #f5f5f5; }
-    tbody tr:nth-child(even) td:first-child { background-color: white; }
-    .footer { margin-top: 20px; font-size: 11px; color: #999; text-align: right; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>APPROVED ATTENDANCE PROPOSAL</h1>
-    <div class="info">
-      <p><strong>Company:</strong> ${company_name}</p>
-      <p><strong>Branch:</strong> ${branch_name}</p>
-      <p><strong>Department:</strong> ${department_name}</p>
-      <p><strong>Team:</strong> ${team_name}</p>
-      <p><strong>Leader:</strong> ${leader_name}</p>
-      <p><strong>Period:</strong> ${period_start} to ${period_end}</p>
+  // Generate full HTML with inline styles for email
+  const htmlContent = `<div style="font-family: Arial, sans-serif; color: #333;">
+    <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">APPROVED ATTENDANCE PROPOSAL</h2>
+    <div style="margin-bottom: 15px; line-height: 1.6; font-size: 13px;">
+      <p style="margin: 5px 0;"><strong>Company:</strong> ${company_name}</p>
+      <p style="margin: 5px 0;"><strong>Branch:</strong> ${branch_name}</p>
+      <p style="margin: 5px 0;"><strong>Department:</strong> ${department_name}</p>
+      <p style="margin: 5px 0;"><strong>Team:</strong> ${team_name}</p>
+      <p style="margin: 5px 0;"><strong>Leader:</strong> ${leader_name}</p>
+      <p style="margin: 5px 0;"><strong>Period:</strong> ${period_start} to ${period_end}</p>
     </div>
-    <table>
-      <thead>${headerHtml}</thead>
-      <tbody>${bodyHtml}</tbody>
-    </table>
-    <div class="footer">Generated on ${new Date().toLocaleDateString()}</div>
-  </div>
-</body>
-</html>`;
+    ${tableHtml}
+    <p style="color: #999; font-size: 11px; margin-top: 15px;">Generated on ${new Date().toISOString()}</p>
+  </div>`;
 
   try {
-    // Launch browser
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
-    
-    // Set content and wait for load
-    await page.setContent(html, { waitUntil: 'networkidle' });
-    
-    // Take screenshot
-    const screenshot = await page.screenshot({ type: 'png', fullPage: true });
-    
-    await browser.close();
-
-    // Convert to base64
-    const base64 = screenshot.toString('base64');
-
     return Response.json({
       success: true,
-      base64: `data:image/png;base64,${base64}`,
-      message: 'Screenshot generated successfully'
+      html: htmlContent,
+      message: 'Email HTML generated successfully'
     });
-
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
