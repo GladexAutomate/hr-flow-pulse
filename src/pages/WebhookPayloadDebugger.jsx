@@ -55,8 +55,8 @@ export default function WebhookPayloadDebugger() {
     return `
       <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #27ae60;">Attendance Proposal Approved</h2>
-          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been approved.</p>
+          <h2 style="color: #27ae60;">Schedule Proposal Approved</h2>
+          <p>The schedule proposal for <strong>${proposal.team_name}</strong> has been approved.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
           
           <h3 style="color: #333; margin-bottom: 10px;">Proposal Details</h3>
@@ -123,8 +123,8 @@ export default function WebhookPayloadDebugger() {
     return `
       <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #e74c3c;">Attendance Proposal Rejected</h2>
-          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
+          <h2 style="color: #e74c3c;">Schedule Proposal Rejected</h2>
+          <p>The schedule proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 
           <h3 style="color: #333; margin-bottom: 10px;">Proposal Details</h3>
@@ -174,7 +174,7 @@ export default function WebhookPayloadDebugger() {
       period_label: proposal.period_label,
       period_start: proposal.period_start,
       period_end: proposal.period_end,
-      email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+      email_subject: `Schedule Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
       email_body: generateApprovedEmailBody(proposal),
     };
   };
@@ -192,7 +192,7 @@ export default function WebhookPayloadDebugger() {
       period_label: proposal.period_label,
       period_start: proposal.period_start,
       period_end: proposal.period_end,
-      email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+      email_subject: `Schedule Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
       rejection_note: proposal.rejection_note || "N/A",
       email_body: generateRejectedEmailBody(proposal),
     };

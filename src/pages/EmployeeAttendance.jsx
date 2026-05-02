@@ -10,8 +10,8 @@ export default function EmployeeAttendance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-800">Employee Attendance</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage org hierarchy and attendance proposals</p>
+          <h1 className="text-2xl font-extrabold text-gray-800">Employee Schedule</h1>
+          <p className="text-gray-500 text-sm mt-1">Manage org hierarchy and schedule proposals</p>
         </div>
         <Link
           to="/attendance-proposal"

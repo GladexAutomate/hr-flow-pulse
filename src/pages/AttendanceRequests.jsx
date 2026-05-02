@@ -113,7 +113,7 @@ function ProposalCard({ proposal, onAction }) {
             <>
               <button disabled={processing} onClick={() => setShowApproveConfirm(true)}
                 className="flex items-center gap-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
-                <CheckCircle className="w-3.5 h-3.5" />Approve
+                <CheckCircle className="w-3.5 h-3.5" />Approve Schedule
               </button>
               <button disabled={processing} onClick={() => setShowReject(s => !s)}
                 className="flex items-center gap-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
@@ -276,8 +276,8 @@ export default function AttendanceRequests() {
     return `
       <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #27ae60;">Attendance Proposal Approved</h2>
-          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been approved.</p>
+          <h2 style="color: #27ae60;">Schedule Proposal Approved</h2>
+          <p>The schedule proposal for <strong>${proposal.team_name}</strong> has been approved.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
           
           <h3 style="color: #333; margin-bottom: 10px;">Proposal Details</h3>
@@ -290,7 +290,7 @@ export default function AttendanceRequests() {
             <tr><td style="padding: 8px; font-weight: bold; background-color: #f5f5f5;">Leader:</td><td style="padding: 8px;">${proposal.leader_name} (${proposal.leader_email})</td></tr>
           </table>
 
-          <h3 style="color: #333; margin-bottom: 10px;">Attendance Schedule</h3>
+          <h3 style="color: #333; margin-bottom: 10px;">Employee Schedule</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
             <thead>
               <tr style="background-color: #003d82; color: white;">
@@ -314,8 +314,8 @@ export default function AttendanceRequests() {
     return `
       <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #e74c3c;">Attendance Proposal Rejected</h2>
-          <p>The attendance proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
+          <h2 style="color: #e74c3c;">Schedule Proposal Rejected</h2>
+          <p>The schedule proposal for <strong>${proposal.team_name}</strong> has been rejected.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
           
           <h3 style="color: #333; margin-bottom: 10px;">Proposal Details</h3>
@@ -358,7 +358,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_subject: `Schedule Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         email_body: generateApprovedEmailBody(proposal),
       });
     } else if (action === "reject") {
@@ -380,7 +380,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_subject: `Schedule Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: rejectionNote,
         email_body: generateRejectedEmailBody(proposal, rejectionNote),
       });
@@ -397,7 +397,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        email_subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_subject: `Schedule Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         email_body: generateApprovedEmailBody(proposal),
       });
     } else if (action === "resend-rejected") {
@@ -413,7 +413,7 @@ export default function AttendanceRequests() {
         period_label: proposal.period_label,
         period_start: proposal.period_start,
         period_end: proposal.period_end,
-        email_subject: `Attendance Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
+        email_subject: `Schedule Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         rejection_note: proposal.rejection_note,
         email_body: generateRejectedEmailBody(proposal, proposal.rejection_note || ""),
       });
@@ -427,8 +427,8 @@ export default function AttendanceRequests() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-800">Attendance Requests</h1>
-          <p className="text-gray-500 text-sm mt-1">Review and approve team attendance proposals</p>
+          <h1 className="text-2xl font-extrabold text-gray-800">Schedule Requests</h1>
+          <p className="text-gray-500 text-sm mt-1">Review and approve team schedule proposals</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {["All", "Pending HR Review", "Approved", "Rejected"].map(s => (
