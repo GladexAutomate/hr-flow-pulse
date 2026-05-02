@@ -204,7 +204,7 @@ ${proposalHtml}
         reviewed_by: user?.email,
         reviewed_at: new Date().toISOString(),
       });
-      await base44.integrations.Core.SendEmail({
+      await base44.functions.invoke("sendAttendanceEmail", {
         to: proposal.leader_email,
         subject: `Attendance Approved — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         body: emailBody,
@@ -241,7 +241,7 @@ ${proposalHtml}
         reviewed_by: user?.email,
         reviewed_at: new Date().toISOString(),
       });
-      await base44.integrations.Core.SendEmail({
+      await base44.functions.invoke("sendAttendanceEmail", {
         to: proposal.leader_email,
         subject: `Attendance Proposal Rejected — ${proposal.team_name} (${proposal.period_start}–${proposal.period_end})`,
         body: emailBody,
