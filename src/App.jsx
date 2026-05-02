@@ -112,11 +112,7 @@ const AuthenticatedApp = () => {
               <AirtableEmployeeList />
             </motion.div>
           } />
-          <Route path="/attendance-scheduler/:id" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <AttendanceScheduler />
-            </motion.div>
-          } />
+
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -135,6 +131,7 @@ function App() {
           <Routes>
             <Route path="/request-form" element={<RequestForm />} />
             <Route path="/attendance-proposal" element={<AttendanceProposalForm />} />
+            <Route path="/attendance-scheduler/:id" element={<AttendanceScheduler />} />
             <Route path="*" element={<AuthenticatedApp />} />
             </Routes>
         </Router>
