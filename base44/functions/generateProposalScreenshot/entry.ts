@@ -36,25 +36,34 @@ Deno.serve(async (req) => {
   };
 
   // Build header row HTML
-  let headerHtml = '<tr><th style="background-color: #2c3e50; color: white; padding: 12px; text-align: left; border: 1px solid #999; font-weight: bold;">Employee</th>';
+  let headerHtml = '<tr><th style="background-color: #1e3a8a; color: white; padding: 12px 10px; text-align: left; border: 1px solid #1e3a8a; font-weight: 700; font-size: 13px;">Employee</th>';
   periodDates.forEach(date => {
     const datePart = date.slice(5);
     const day = getDayOfWeek(date);
-    headerHtml += `<th style="background-color: #2c3e50; color: white; padding: 12px; text-align: center; border: 1px solid #999; font-weight: bold;"><strong>${datePart}</strong><br><span style="font-weight: normal; font-size: 11px;">${day}</span></th>`;
+    headerHtml += `<th style="background-color: #1e3a8a; color: white; padding: 10px 6px; text-align: center; border: 1px solid #1e3a8a; font-weight: 700; font-size: 12px;"><strong>${datePart}</strong><br><span style="font-weight: 500; font-size: 10px;">${day}</span></th>`;
   });
   headerHtml += '</tr>';
+
+  // Shift color mapping
+  const shiftColors = {
+    'Opener': { bg: '#1e40af', color: '#fff' },
+    'Mid': { bg: '#dc2626', color: '#fff' },
+    'Closer': { bg: '#16a34a', color: '#fff' },
+    'OFF': { bg: '#dc2626', color: '#fff' },
+    'VL': { bg: '#dc2626', color: '#fff' },
+  };
 
   // Build body rows
   let bodyHtml = '';
   employees.forEach((emp, idx) => {
-    const bgColor = idx % 2 === 0 ? '#f5f5f5' : '#ffffff';
-    bodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 12px 10px; border: 1px solid #ddd; font-weight: 600; font-size: 13px;">${emp.name}</td>`;
+    const bgColor = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
+    bodyHtml += `<tr style="background-color: ${bgColor};"><td style="padding: 12px 10px; border: 1px solid #e5e7eb; font-weight: 600; font-size: 13px; color: #1f2937;">${emp.name}</td>`;
     periodDates.forEach((date, dIdx) => {
       const cell = (schedule[emp.id] || {})[date] || {};
       const shift = cell.shift || getDefaultShift(idx, dIdx);
       const shiftLabel = cell.shift === 'Custom' ? (cell.customLabel || 'Custom') : shift;
-      const shiftColor = shift === 'Mid' ? '#ff9800' : '#333';
-      bodyHtml += `<td style="padding: 10px 8px; border: 1px solid #ddd; text-align: center; font-size: 12px; color: ${shiftColor}; font-weight: bold;">${shiftLabel}</td>`;
+      const colors = shiftColors[shift] || { bg: '#6b7280', color: '#fff' };
+      bodyHtml += `<td style="padding: 8px 6px; border: 1px solid #e5e7eb; text-align: center; font-size: 11px; font-weight: 600;"><div style="background-color: ${colors.bg}; color: ${colors.color}; padding: 6px 4px; border-radius: 4px; display: inline-block; min-width: 50px;">${shiftLabel}</div></td>`;
     });
     bodyHtml += '</tr>';
   });
