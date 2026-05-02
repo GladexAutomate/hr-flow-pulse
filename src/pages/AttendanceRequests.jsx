@@ -59,12 +59,15 @@ function ProposalCard({ proposal, onAction }) {
   const [expanded, setExpanded] = useState(false);
   const [rejectionNote, setRejectionNote] = useState("");
   const [showReject, setShowReject] = useState(false);
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const handleApprove = async () => {
     setProcessing(true);
     await onAction("approve", proposal, null);
     setProcessing(false);
+    setShowApproveConfirm(false);
   };
 
   const handleReject = async () => {
@@ -72,6 +75,7 @@ function ProposalCard({ proposal, onAction }) {
     setProcessing(true);
     await onAction("reject", proposal, rejectionNote.trim());
     setProcessing(false);
+    setShowRejectConfirm(false);
     setShowReject(false);
   };
 
@@ -96,7 +100,7 @@ function ProposalCard({ proposal, onAction }) {
           </button>
           {proposal.status === "Pending HR Review" && (
             <>
-              <button disabled={processing} onClick={handleApprove}
+              <button disabled={processing} onClick={() => setShowApproveConfirm(true)}
                 className="flex items-center gap-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
                 <CheckCircle className="w-3.5 h-3.5" />Approve
               </button>
@@ -116,10 +120,48 @@ function ProposalCard({ proposal, onAction }) {
             className="w-full border border-red-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-red-50 resize-none" />
           <div className="flex gap-2">
             <button onClick={() => setShowReject(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button disabled={!rejectionNote.trim() || processing} onClick={handleReject}
+            <button disabled={!rejectionNote.trim() || processing} onClick={() => setShowRejectConfirm(true)}
               className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white rounded-lg py-2 text-sm font-semibold flex items-center justify-center gap-1">
               {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}Confirm Reject
             </button>
+          </div>
+        </div>
+      )}
+
+      {showApproveConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 rounded-xl">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="font-bold text-lg text-gray-800 mb-2">Approve Attendance Proposal?</h3>
+            <p className="text-sm text-gray-600 mb-6">This will approve the attendance proposal for <strong>{proposal.team_name}</strong> and notify all stakeholders.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowApproveConfirm(false)} disabled={processing}
+                className="flex-1 border border-gray-300 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                Cancel
+              </button>
+              <button onClick={handleApprove} disabled={processing}
+                className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5">
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 rounded-xl">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="font-bold text-lg text-gray-800 mb-2">Reject Attendance Proposal?</h3>
+            <p className="text-sm text-gray-600 mb-6">This will reject the proposal for <strong>{proposal.team_name}</strong> with the provided reason.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRejectConfirm(false)} disabled={processing}
+                className="flex-1 border border-gray-300 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                Cancel
+              </button>
+              <button onClick={handleReject} disabled={processing}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5">
+                {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}Reject
+              </button>
+            </div>
           </div>
         </div>
       )}
