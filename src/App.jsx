@@ -23,6 +23,7 @@ import AirtableEmployeeList from './pages/AirtableEmployeeList';
 import PublicSchedule from './pages/PublicSchedule';
 import ScheduleDashboard from './pages/ScheduleDashboard';
 import NavigationLibrary from './pages/NavigationLibrary';
+import WebhookPayloadDebugger from './pages/WebhookPayloadDebugger';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -123,6 +124,11 @@ const AuthenticatedApp = () => {
           <Route path="/links" element={
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
               <NavigationLibrary />
+            </motion.div>
+          } />
+          <Route path="/webhook-debugger" element={
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
+              <WebhookPayloadDebugger />
             </motion.div>
           } />
 
