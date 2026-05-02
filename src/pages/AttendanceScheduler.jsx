@@ -18,7 +18,7 @@ function ShiftPalette({ onDragStart }) {
           draggable
           onDragStart={() => onDragStart(s.key)}
           style={{ background: s.color, color: s.text }}
-          className="px-3 py-1.5 rounded-lg text-xs font-bold cursor-grab active:cursor-grabbing select-none shadow-sm border border-white/30"
+          className="w-20 h-8 flex items-center justify-center rounded-lg text-xs font-bold cursor-grab active:cursor-grabbing select-none shadow-sm border border-white/30"
         >
           {s.label}
         </div>
