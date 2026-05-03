@@ -139,7 +139,8 @@ export default function Reports() {
 
   const years = [...new Set(requests.map(r => getYear(new Date(r.created_date))))].sort().reverse();
   const activeFacet = FACETS.find(f => f.key === activeTab);
-  const facetRequests = requests.filter(activeFacet.filter);
+  // Exclude waived/cancelled from breach reporting
+  const facetRequests = requests.filter(activeFacet.filter).filter(r => r.breach_status !== "Waived");
   const filteredRequests = filterByDateRange(facetRequests, viewMode, year, startDate, endDate);
   const chartData = getDateRangeData(facetRequests, viewMode, year, startDate, endDate);
 

@@ -24,6 +24,7 @@ const BREACH_COLORS = {
   "Valid": "bg-emerald-100 text-emerald-700",
   "Breached": "bg-red-100 text-red-700",
   "Pending": "bg-gray-100 text-gray-500",
+  "Waived": "bg-purple-100 text-purple-500",
 };
 
 const RESOURCE_SLA = { "Rank and File": 15, "Supervisory": 20, "Managerial": 30 };
@@ -44,7 +45,7 @@ function getSLA(req) {
 }
 
 function computeBreach(request) {
-  if (request.status === "Waived/Cancelled") return "Pending";
+  if (request.status === "Waived/Cancelled") return "Waived";
   if (request.status !== "Completed" || !request.date_started || !request.date_completed) return "Pending";
   const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
   const sla = getSLA(request);
