@@ -54,7 +54,7 @@ export default function OrgAssignCell({ emp, companies, onSaved }) {
         <select
           value={companyId}
           onChange={e => setCompanyId(e.target.value)}
-          className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+          className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-gray-800"
         >
           <option value="">Company…</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

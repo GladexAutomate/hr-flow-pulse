@@ -94,7 +94,7 @@ export default function AirtableEmployeeList() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, branch, department, position..."
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white text-gray-800"
         />
       </div>
 
@@ -118,7 +118,7 @@ export default function AirtableEmployeeList() {
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Full Name</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">AT Branch</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">AT Department</th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Position</th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Job Title</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap" colSpan={4}>
                     Org Assignment (Company › Branch › Dept › Team)
