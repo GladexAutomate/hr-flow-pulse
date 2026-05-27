@@ -11,9 +11,9 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get("AIRTABLE_API_KEY");
 
+    // Get a sample record with all fields
     const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`);
-    url.searchParams.set("pageSize", "5");
-    url.searchParams.set("filterByFormula", `SEARCH("AGONIA", UPPER({Full Name}))`);
+    url.searchParams.set("pageSize", "2");
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${apiKey}` }
@@ -26,19 +26,23 @@ Deno.serve(async (req) => {
 
     const data = await res.json();
 
-    const samples = (data.records || []).map(r => ({
+    // Collect ALL field names across all records
+    const allFields = new Set();
+    (data.records || []).forEach(r => {
+      Object.keys(r.fields).forEach(k => allFields.add(k));
+    });
+
+    // Show full raw records
+    const records = (data.records || []).map(r => ({
       id: r.id,
-      full_name: r.fields["Full Name"],
-      first_name: r.fields["First Name"],
-      last_name: r.fields["Last Name"],
-      job_title: r.fields["Job Title"],
-      department_role: r.fields["Department Role"],
-      work_location: r.fields["Work Location"],
-      department: r.fields["Department"],
-      status: r.fields["Status"],
+      fields: r.fields,
     }));
 
-    return Response.json({ sample_records: samples });
+    return Response.json({
+      total_fields: allFields.size,
+      all_field_names: Array.from(allFields).sort(),
+      sample_records: records,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
