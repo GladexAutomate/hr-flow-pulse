@@ -52,13 +52,13 @@ Deno.serve(async (req) => {
       const f = r.fields;
       const firstName = (f["First Name"] || "").trim();
       const lastName = (f["Last Name"] || "").trim();
-      const branchVal = Array.isArray(f["Branch"]) ? f["Branch"].join(", ") : (f["Branch"] || "");
+      const branchVal = f["Work Location"] || (Array.isArray(f["Branch"]) ? f["Branch"].join(", ") : (f["Branch"] || ""));
       return {
         airtable_id: r.id,
         full_name: [firstName, lastName].filter(Boolean).join(" "),
         branch: branchVal,
-        department: f["Department1"] || f["Department"] || "",
-        position: f["Position"] || "",
+        department: f["Department"] || f["Department1"] || "",
+        position: f["Job Title"] || f["Position"] || "",
         status: f["Status"] || "",
         org_company_id: getCompanyId(branchVal),
       };
