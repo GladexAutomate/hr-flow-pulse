@@ -124,14 +124,14 @@ export default function AttendanceProposalForm() {
               <div key={key}>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
                 <input value={form[key]} onChange={e => setField(key, e.target.value)} placeholder={placeholder}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
               </div>
             ))}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Email <span className="text-orange-500">*</span></label>
             <input type="email" value={form.leader_email} onChange={e => setField("leader_email", e.target.value)} placeholder="your@email.com"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50" />
           </div>
 
           {/* Org Hierarchy */}
