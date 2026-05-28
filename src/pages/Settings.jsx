@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Trash2, AlertTriangle, LogOut, Copy, Check, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WebhookSettings from "@/components/settings/WebhookSettings";
+import ExportScheduleModule from "@/components/settings/ExportScheduleModule";
 
 const HR_FORM_URL = `${window.location.origin}/request-form`;
 
@@ -62,6 +63,9 @@ export default function Settings() {
           <LogOut className="w-4 h-4" /> Sign Out
         </Button>
       </div>
+
+      {/* Export Schedule Module */}
+      <ExportScheduleModule />
 
       {/* Webhook Settings */}
       <WebhookSettings />
