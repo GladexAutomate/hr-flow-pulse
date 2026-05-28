@@ -193,7 +193,7 @@ function DropdownField({ label, value, onChange, options, placeholder, disabled 
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="w-full bg-gray-50 border-gray-200 rounded-xl h-auto py-3 text-sm">
+        <SelectTrigger className="w-full bg-gray-50 border-gray-200 rounded-xl h-auto py-3 text-sm text-gray-900">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

@@ -85,4 +85,8 @@
   button, a, [role="button"] {
     @apply select-none;
   }
+
+  input, textarea, select, [role="combobox"] {
+    color: #111827 !important;
+  }
 }
