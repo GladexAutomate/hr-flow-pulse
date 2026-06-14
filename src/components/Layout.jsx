@@ -1,13 +1,12 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { ClipboardList, BarChart2, Users, Settings, CalendarDays, Database, Link as LinkIcon, Webhook } from "lucide-react";
+import { ClipboardList, BarChart2, Users, Settings, CalendarDays, Database, Link as LinkIcon } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/", label: "Tracker", icon: ClipboardList },
   { to: "/reports", label: "Reports", icon: BarChart2 },
   { to: "/attendance", label: "Organization Setup", icon: CalendarDays },
   { to: "/airtable-employees", label: "AT Employees", icon: Database },
-  { to: "/webhook-debugger", label: "Webhook Debug", icon: Webhook },
   { to: "/links", label: "Links", icon: LinkIcon },
   { to: "/users", label: "Users", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
