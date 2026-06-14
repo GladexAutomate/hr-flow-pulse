@@ -55,12 +55,34 @@ export default function WebhookSettings() {
     setTesting(t => ({ ...t, [key]: true }));
     setTestResult(r => ({ ...r, [key]: null }));
     try {
-      const res = await base44.functions.invoke("testWebhook", { url, key });
-      // Accept any 2xx or common webhook-received codes (200, 201, 202)
-      // n8n test URLs return 404 when not actively listening — treat as "sent" if status < 500
-      const status = res.data?.status;
-      setTestStatus(s => ({ ...s, [key]: status }));
-      setTestResult(r => ({ ...r, [key]: (status && status < 500) ? "ok" : "error" }));
+      let res;
+      if (key === "hr_request_webhook") {
+        // Send a sample HR request payload directly to the URL
+        const samplePayload = {
+          event: "hr_request_created",
+          date_submitted: new Date().toISOString(),
+          date_submitted_formatted: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+          branch: "Gladex Main",
+          subject: "COE (Certificate of Employment)",
+          status: "Pending",
+          requested_by: "Sample Employee",
+          email_address: "sample@gladex.com",
+          hr_attachments: [],
+          email_body: "<p>This is a <strong>test notification</strong> from HR Hub · Flow Pulse.</p>",
+        };
+        const fetchRes = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(samplePayload),
+        });
+        setTestStatus(s => ({ ...s, [key]: fetchRes.status }));
+        setTestResult(r => ({ ...r, [key]: fetchRes.status < 500 ? "ok" : "error" }));
+      } else {
+        res = await base44.functions.invoke("testWebhook", { url, key });
+        const status = res.data?.status;
+        setTestStatus(s => ({ ...s, [key]: status }));
+        setTestResult(r => ({ ...r, [key]: (status && status < 500) ? "ok" : "error" }));
+      }
     } catch {
       setTestResult(r => ({ ...r, [key]: "error" }));
     }
