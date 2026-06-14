@@ -134,18 +134,16 @@ export default function WebhookSettings() {
               onClick={() => handleTest(key)}
               disabled={testing[key] || !values[key]}
               variant="outline"
-              className="shrink-0 flex items-center gap-1.5"
+              className="shrink-0 flex items-center gap-1.5 min-w-[80px] justify-center"
               title="Send a test payload to this webhook"
             >
-              {testing[key] ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : testResult[key] === "ok" ? (
-                <><CheckCircle className="w-4 h-4 text-green-500" /> Sent! ({testStatus[key]})</>
-              ) : testResult[key] === "error" ? (
-                <><Send className="w-4 h-4 text-red-500" /> Failed ({testStatus[key]})</>
-              ) : (
-                <><Send className="w-4 h-4" /> Test</>
-              )}
+              {testing[key] && <Loader2 className="w-4 h-4 animate-spin" />}
+              {!testing[key] && testResult[key] === "ok" && <CheckCircle className="w-4 h-4 text-green-500" />}
+              {!testing[key] && testResult[key] === "error" && <Send className="w-4 h-4 text-red-500" />}
+              {!testing[key] && !testResult[key] && <Send className="w-4 h-4" />}
+              <span>
+                {testing[key] ? "" : testResult[key] === "ok" ? `Sent! (${testStatus[key]})` : testResult[key] === "error" ? `Failed (${testStatus[key]})` : "Test"}
+              </span>
             </Button>
             <Button
               onClick={() => handleSave(key)}
