@@ -66,15 +66,6 @@ export default function NavigationLibrary() {
       category: "Forms",
       icon: FileText,
       color: "blue"
-    },
-    {
-      id: "attendance-proposal",
-      title: "Schedule Proposal Submission",
-      description: "Team leaders submit schedule proposals for approval",
-      url: attendanceProposalUrl,
-      category: "Forms",
-      icon: FileText,
-      color: "blue"
     }
   ];
 
