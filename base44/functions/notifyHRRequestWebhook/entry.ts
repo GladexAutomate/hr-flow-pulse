@@ -1,139 +1,154 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+function buildEmailHtml({ requestedBy, dateSubmitted, branch, subject, status, emailAddress, department, details, attachments, eventType }) {
+  const statusColors = {
+    'Pending': '#f59e0b',
+    'In Progress': '#3b82f6',
+    'Completed': '#10b981',
+    'Waived/Cancelled': '#6b7280',
+  };
+  const statusColor = statusColors[status] || '#6b7280';
 
-    const { entity_id, event_type } = await req.json();
+  const attachmentsHtml = attachments && attachments.length > 0
+    ? attachments.map((a, i) =>
+        `<tr>
+          <td style="padding:8px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#6b7280;">Attachment ${i + 1}</td>
+          <td style="padding:8px 16px;border-bottom:1px solid #f0f0f0;font-size:13px;">
+            <a href="${a.url}" style="color:#f97316;font-weight:600;text-decoration:none;">📎 View File</a>
+          </td>
+        </tr>`
+      ).join('')
+    : `<tr><td colspan="2" style="padding:8px 16px;font-size:13px;color:#9ca3af;font-style:italic;">No attachments</td></tr>`;
 
-    // Fetch the HR request record
-    const record = await base44.asServiceRole.entities.HRRequest.filter({ id: entity_id });
-    const hr = record[0];
-    if (!hr) return Response.json({ error: 'Record not found' }, { status: 404 });
+  const introText = eventType === 'create'
+    ? `Your HR request has been <strong>successfully submitted</strong>. Our People & Culture team will review it shortly.`
+    : `Your HR request status has been updated to <strong style="color:${statusColor};">${status}</strong>.`;
 
-    // Fetch webhook URL from AppSettings
-    const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'hr_request_webhook' });
-    const webhookUrl = settings[0]?.value;
-    if (!webhookUrl) return Response.json({ error: 'No webhook URL configured' }, { status: 400 });
-
-    // Format date submitted
-    const dateSubmitted = hr.created_date
-      ? new Date(hr.created_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-      : '—';
-
-    // Build attachments HTML
-    const attachmentsHtml = (hr.hr_attachments && hr.hr_attachments.length > 0)
-      ? hr.hr_attachments.map((a, i) =>
-          `<tr>
-            <td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#374151;">
-              Attachment ${i + 1}
-            </td>
-            <td style="padding:6px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;">
-              <a href="${a.url}" style="color:#f97316;text-decoration:none;">View File</a>
-            </td>
-          </tr>`
-        ).join('')
-      : `<tr><td colspan="2" style="padding:6px 12px;font-size:13px;color:#9ca3af;">No attachments</td></tr>`;
-
-    // Status color
-    const statusColors = {
-      'Pending': '#f59e0b',
-      'In Progress': '#3b82f6',
-      'Completed': '#10b981',
-      'Waived/Cancelled': '#6b7280',
-    };
-    const statusColor = statusColors[hr.status] || '#6b7280';
-
-    // Build professional HTML email body
-    const emailBody = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#f9fafb;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;padding:32px 16px;">
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>HR Request Notification</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-          
-          <!-- Header -->
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.10);">
+
+          <!-- Header Banner -->
           <tr>
-            <td style="background:linear-gradient(135deg,#1e3a6e 0%,#1d4ed8 100%);padding:28px 32px;">
+            <td style="background:linear-gradient(135deg,#1e3a6e 0%,#1d4ed8 100%);padding:32px 36px 24px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">HR Hub · Flow Pulse</p>
-                    <h1 style="margin:6px 0 0;font-size:22px;font-weight:700;color:#ffffff;">HR Request Update</h1>
+                    <p style="margin:0 0 4px;font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:2px;text-transform:uppercase;font-weight:700;">Gladex · HR Hub</p>
+                    <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.2;">HR Request Notification</h1>
                   </td>
-                  <td align="right" valign="middle">
-                    <span style="display:inline-block;background:${statusColor};color:#ffffff;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">${hr.status || 'Pending'}</span>
+                  <td align="right" valign="top">
+                    <span style="display:inline-block;background:${statusColor};color:#ffffff;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;letter-spacing:0.5px;white-space:nowrap;">${status}</span>
                   </td>
                 </tr>
               </table>
             </td>
+          </tr>
+
+          <!-- Orange Accent Bar -->
+          <tr>
+            <td style="background:#f97316;height:4px;font-size:0;line-height:0;">&nbsp;</td>
           </tr>
 
           <!-- Greeting -->
           <tr>
-            <td style="padding:28px 32px 0;">
-              <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">
-                Dear <strong>${hr.requested_by || 'Requestor'}</strong>,
-              </p>
-              <p style="margin:10px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">
-                ${event_type === 'create'
-                  ? 'Your HR request has been successfully submitted. Our People and Culture team will review it and get back to you shortly.'
-                  : `Your HR request status has been updated to <strong style="color:${statusColor};">${hr.status}</strong>. Please see the details below.`
-                }
-              </p>
+            <td style="padding:32px 36px 0;">
+              <p style="margin:0;font-size:16px;color:#111827;font-weight:600;">Hello, ${requestedBy || 'Team Member'},</p>
+              <p style="margin:10px 0 0;font-size:14px;color:#4b5563;line-height:1.7;">${introText}</p>
             </td>
           </tr>
 
-          <!-- Details Table -->
+          <!-- Divider -->
           <tr>
-            <td style="padding:24px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
+            <td style="padding:24px 36px 0;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Request Details</p>
+            </td>
+          </tr>
+
+          <!-- Details Card -->
+          <tr>
+            <td style="padding:16px 36px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
                 <tr style="background:#f8fafc;">
-                  <th style="padding:10px 12px;text-align:left;font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;font-weight:600;width:40%;">Field</th>
-                  <th style="padding:10px 12px;text-align:left;font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;font-weight:600;">Details</th>
+                  <td style="padding:10px 16px;font-size:12px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:1px;width:38%;">Field</td>
+                  <td style="padding:10px 16px;font-size:12px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Value</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Date Submitted</td>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111827;">${dateSubmitted}</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Date Submitted</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#111827;">${dateSubmitted}</td>
                 </tr>
                 <tr style="background:#fafafa;">
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Branch</td>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111827;">${hr.branch || '—'}</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Branch</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#111827;">${branch || '—'}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Subject</td>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111827;">${hr.subject || '—'}</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Department</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#111827;">${department || '—'}</td>
                 </tr>
                 <tr style="background:#fafafa;">
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Status</td>
-                  <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">
-                    <span style="display:inline-block;background:${statusColor}20;color:${statusColor};font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;">${hr.status || '—'}</span>
-                  </td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Subject / Request Type</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#111827;font-weight:600;">${subject || '—'}</td>
                 </tr>
                 <tr>
-                  <td style="padding:10px 12px;font-size:13px;color:#6b7280;font-weight:600;vertical-align:top;">Attachments</td>
-                  <td style="padding:0;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      ${attachmentsHtml}
-                    </table>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Email Address</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#111827;">${emailAddress || '—'}</td>
+                </tr>
+                <tr style="background:#fafafa;">
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;">Status</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;">
+                    <span style="display:inline-block;background:${statusColor}22;color:${statusColor};font-size:12px;font-weight:700;padding:3px 12px;border-radius:10px;">${status || '—'}</span>
                   </td>
                 </tr>
+                ${details ? `<tr>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#6b7280;font-weight:600;vertical-align:top;">Details / Notes</td>
+                  <td style="padding:10px 16px;border-top:1px solid #f0f0f0;font-size:13px;color:#374151;line-height:1.6;">${details}</td>
+                </tr>` : ''}
               </table>
+            </td>
+          </tr>
+
+          <!-- Attachments -->
+          <tr>
+            <td style="padding:24px 36px 0;">
+              <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Attachments</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                ${attachmentsHtml}
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding:28px 36px 24px;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6;">
+                For questions or follow-ups, please reply to this email or contact the HR team directly.
+              </p>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;text-align:center;">
-                This is an automated notification from <strong style="color:#374151;">HR Hub · Flow Pulse</strong>.<br>
-                Please do not reply to this message. For inquiries, contact your HR team directly.
-              </p>
+            <td style="background:#1e3a6e;padding:20px 36px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.85);font-weight:700;">Gladex Tours · HR Hub</p>
+                    <p style="margin:2px 0 0;font-size:11px;color:rgba(255,255,255,0.45);">People & Culture Department · Flow Pulse System</p>
+                  </td>
+                  <td align="right">
+                    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);">Automated Notification<br>Do not reply directly</p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -143,8 +158,41 @@ Deno.serve(async (req) => {
   </table>
 </body>
 </html>`;
+}
 
-    // Build payload
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { entity_id, event_type } = await req.json();
+
+    const record = await base44.asServiceRole.entities.HRRequest.filter({ id: entity_id });
+    const hr = record[0];
+    if (!hr) return Response.json({ error: `Invalid id value: ${entity_id} -> Object not found` }, { status: 404 });
+
+    const settings = await base44.asServiceRole.entities.AppSettings.filter({ key: 'hr_request_webhook' });
+    const webhookUrl = settings[0]?.value;
+    if (!webhookUrl) return Response.json({ error: 'No webhook URL configured' }, { status: 400 });
+
+    const dateSubmitted = hr.created_date
+      ? new Date(hr.created_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      : '—';
+
+    const emailBody = buildEmailHtml({
+      requestedBy: hr.requested_by,
+      dateSubmitted,
+      branch: hr.branch,
+      subject: hr.subject,
+      status: hr.status || 'Pending',
+      emailAddress: hr.email_address,
+      department: hr.department,
+      details: hr.details,
+      attachments: hr.hr_attachments || [],
+      eventType: event_type,
+    });
+
     const payload = {
       event: event_type === 'create' ? 'hr_request_created' : 'hr_request_status_changed',
       date_submitted: hr.created_date || null,
