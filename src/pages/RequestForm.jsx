@@ -143,7 +143,17 @@ export default function RequestForm() {
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-3">Request Submitted!</h2>
-          <p className="text-gray-500 mb-8">Your HR request has been received. The HR team will process it shortly.</p>
+          <p className="text-gray-500 mb-4">Your HR request has been received. The HR team will process it shortly.</p>
+          <div className="bg-orange-50 border border-orange-100 rounded-xl px-5 py-4 mb-8 text-left space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 font-medium">Subject</span>
+              <span className="text-gray-800 font-semibold">{subject}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 font-medium">Date Submitted</span>
+              <span className="text-gray-800 font-semibold">{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+            </div>
+          </div>
           <button
             onClick={() => { setSubmitted(false); setSubject(""); setForm({}); setFile(null); }}
             className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl transition-all"
