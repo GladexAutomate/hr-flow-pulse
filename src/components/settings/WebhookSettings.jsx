@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 
 const WEBHOOK_KEYS = [
   {
+    key: "hr_request_webhook",
+    label: "HR Request Notifications Webhook",
+    description: "Fired when a new HR request is submitted or its status changes. Sends a professional HTML email payload with Date Submitted, Branch, Subject, Status, and Attachments.",
+  },
+  {
     key: "attendance_approved_webhook",
     label: "Attendance Approved Webhook",
     description: "Fired when an attendance proposal is approved by HR.",
