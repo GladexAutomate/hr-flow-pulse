@@ -21,8 +21,10 @@ function buildEmailHtml({ requestedBy, dateSubmitted, branch, subject, status, e
     : `<tr><td colspan="2" style="padding:8px 16px;font-size:13px;color:#9ca3af;font-style:italic;">No attachments</td></tr>`;
 
   const introText = eventType === 'create'
-    ? `Your HR request has been <strong>successfully submitted</strong>. Our People & Culture team will review it shortly.`
-    : `Your HR request status has been updated to <strong style="color:${statusColor};">${status}</strong>.`;
+    ? `Your HR request has been <strong>successfully submitted</strong>. Our People &amp; Culture team will review it shortly.`
+    : status === 'Completed'
+    ? `Great news! Your HR request has been <strong style="color:#10b981;">completed</strong>. Please find the details below. If you have any questions or need further assistance, feel free to reach out to the HR team.`
+    : `Your HR request status has been updated to <strong style="color:${statusColor};">${status}</strong>. Our team is actively working on it — we'll keep you posted on any further updates.`;
 
   return `<!DOCTYPE html>
 <html lang="en">
