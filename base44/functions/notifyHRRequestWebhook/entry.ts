@@ -168,7 +168,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { entity_id, event_type } = await req.json();
+    const body = await req.json();
+    // Entity automations send: { event: { type, entity_name, entity_id }, data: {...} }
+    // Also support direct calls with { entity_id, event_type }
+    const entity_id = body.event?.entity_id || body.entity_id;
+    const event_type = body.event?.type || body.event_type;
 
     const record = await base44.asServiceRole.entities.HRRequest.filter({ id: entity_id });
     const hr = record[0];
