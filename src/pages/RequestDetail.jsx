@@ -71,7 +71,7 @@ export default function RequestDetail() {
             {req.resource_type && <div><span className="font-semibold text-gray-600">Resource Type:</span> <span className="text-gray-800">{req.resource_type}</span></div>}
             <div><span className="font-semibold text-gray-600">Requested By:</span> <span className="text-gray-800">{req.requested_by}</span></div>
             <div><span className="font-semibold text-gray-600">Email:</span> <span className="text-gray-800">{req.email_address}</span></div>
-            {req.subject === "NTE Request" && req.nte_to && <div><span className="font-semibold text-gray-600">NTE To:</span> <span className="text-gray-800">{req.nte_to}</span></div>}
+            {req.subject === "NTE Request" && <div><span className="font-semibold text-gray-600">NTE To:</span> <span className="text-gray-800">{req.nte_to || "—"}</span></div>}
             {req.department && <div><span className="font-semibold text-gray-600">Department:</span> <span className="text-gray-800">{req.department}</span></div>}
             {req.purpose && <div><span className="font-semibold text-gray-600">Purpose:</span> <span className="text-gray-800">{req.purpose}</span></div>}
             {req.tin && <div><span className="font-semibold text-gray-600">TIN:</span> <span className="text-gray-800">{req.tin}</span></div>}
