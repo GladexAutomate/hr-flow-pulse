@@ -70,6 +70,10 @@
     "reason_of_atd": {
       "type": "string"
     },
+    "nte_to": {
+      "type": "string",
+      "description": "Employee receiving the NTE (for NTE Request only)"
+    },
     "file_url": {
       "type": "string"
     },
