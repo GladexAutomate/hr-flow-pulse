@@ -205,8 +205,9 @@ export default function RequestForm() {
               {/* NTE Request */}
               {subject === "NTE Request" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Email Address" name="email_address" value={form.email_address || ""} onChange={handleChange} required type="email" placeholder="your@email.com" />
+                  <InputField label="NTE To (Employee Name)" name="nte_to" value={form.nte_to || ""} onChange={handleChange} required placeholder="Employee receiving the NTE" />
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Details of Request <span className="text-orange-500">*</span></label>
                     <textarea name="details" value={form.details || ""} onChange={handleChange} required rows={4}
@@ -219,7 +220,7 @@ export default function RequestForm() {
               {/* Resource Request */}
               {subject === "Resource Request" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Email Address" name="email_address" value={form.email_address || ""} onChange={handleChange} required type="email" placeholder="your@email.com" />
                   <SelectField label="Resource Type" name="resource_type" value={form.resource_type || ""} onChange={handleChange} required
                     options={RESOURCE_TYPES.map(r => ({ value: r, label: `${r} (${RESOURCE_SLA[r]} days SLA)` }))} />
@@ -235,7 +236,7 @@ export default function RequestForm() {
               {/* General Announcement / WFH / Others */}
               {["General Announcement Request", "WFH Request", "Others"].includes(subject) && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Email Address" name="email_address" value={form.email_address || ""} onChange={handleChange} required type="email" placeholder="your@email.com" />
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Details of Request <span className="text-orange-500">*</span></label>
@@ -249,7 +250,7 @@ export default function RequestForm() {
               {/* COE */}
               {subject === "COE (Certificate of Employment)" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Purpose of Request" name="purpose" value={form.purpose || ""} onChange={handleChange} required placeholder="e.g. For visa application" />
                   <InputField label="Email Address" name="email_address" value={form.email_address || ""} onChange={handleChange} required type="email" placeholder="your@email.com" />
                 </>
@@ -258,7 +259,7 @@ export default function RequestForm() {
               {/* ITR */}
               {subject === "ITR (Income Tax Return)" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="TIN" name="tin" value={form.tin || ""} onChange={handleChange} required placeholder="000-000-000" />
                   <InputField label="Address" name="address" value={form.address || ""} onChange={handleChange} required placeholder="Your complete address" />
                   <InputField label="Birthday" name="bday" value={form.bday || ""} onChange={handleChange} required type="date" />
@@ -276,7 +277,7 @@ export default function RequestForm() {
               {/* LAST PAY */}
               {subject === "LAST PAY" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Department" name="department" value={form.department || ""} onChange={handleChange} required placeholder="Your department" />
                   <InputField label="Email Address" name="email_address" value={form.email_address || ""} onChange={handleChange} required type="email" placeholder="your@email.com" />
                 </>
@@ -285,7 +286,7 @@ export default function RequestForm() {
               {/* ATD */}
               {subject === "ATD (Authority to Deduct)" && (
                 <>
-                  <InputField label="Name" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
+                  <InputField label="Name (Requested By)" name="requested_by" value={form.requested_by || ""} onChange={handleChange} required placeholder="Your full name" />
                   <InputField label="Department" name="department" value={form.department || ""} onChange={handleChange} required placeholder="Your department" />
                   <InputField label="Amount" name="amount" value={form.amount || ""} onChange={handleChange} required placeholder="e.g. 500.00" />
                   <div>
