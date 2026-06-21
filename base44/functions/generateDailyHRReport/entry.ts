@@ -41,7 +41,7 @@ function buildReportHtml(grouped, reportDate, totalCount) {
   const totalPending = allRequests.filter(r => r.status === "Pending").length;
   const totalInProgress = allRequests.filter(r => r.status === "In Progress").length;
 
-  // Build category breakdown summary rows
+  // Build category breakdown summary rows with anchor links
   let breakdownRows = "";
   for (const [subject, requests] of Object.entries(grouped)) {
     const color = subjectColors[subject] || "#6b7280";
@@ -49,10 +49,13 @@ function buildReportHtml(grouped, reportDate, totalCount) {
     const urgent = requests.filter(r => { const rem = getSLA(r) - getDaysElapsed(r.created_date); return rem >= 0 && rem <= 2; }).length;
     const pending = requests.filter(r => r.status === "Pending").length;
     const inProg = requests.filter(r => r.status === "In Progress").length;
+    const anchor = subject.toLowerCase().replace(/[^a-z0-9]/g, "-");
     breakdownRows += `
       <tr style="border-bottom:1px solid #f0f0f0;">
-        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${color};white-space:nowrap;">
-          <span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>${subject}
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;white-space:nowrap;">
+          <a href="#${anchor}" style="color:${color};text-decoration:none;">
+            <span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>${subject} →
+          </a>
         </td>
         <td style="padding:10px 14px;font-size:13px;font-weight:900;color:#111827;text-align:center;">${requests.length}</td>
         <td style="padding:10px 14px;font-size:12px;color:#92400e;text-align:center;">${pending}</td>
@@ -60,6 +63,15 @@ function buildReportHtml(grouped, reportDate, totalCount) {
         <td style="padding:10px 14px;font-size:12px;font-weight:700;color:#d97706;text-align:center;">${urgent > 0 ? `⏰ ${urgent}` : "—"}</td>
         <td style="padding:10px 14px;font-size:12px;font-weight:700;color:#dc2626;text-align:center;">${breached > 0 ? `🔴 ${breached}` : "—"}</td>
       </tr>`;
+  }
+
+  // Build quick-jump category buttons
+  let categoryButtons = "";
+  for (const [subject, requests] of Object.entries(grouped)) {
+    const color = subjectColors[subject] || "#6b7280";
+    const anchor = subject.toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const breached = requests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
+    categoryButtons += `<a href="#${anchor}" style="display:inline-block;margin:0 6px 6px 0;padding:7px 14px;background:${color};color:#fff;font-size:12px;font-weight:700;border-radius:20px;text-decoration:none;white-space:nowrap;">${subject} <span style="background:rgba(255,255,255,0.25);border-radius:10px;padding:1px 7px;font-size:11px;">${requests.length}${breached > 0 ? ` · 🔴${breached}` : ""}</span></a>`;
   }
 
   // Build per-category detail sections
@@ -127,16 +139,17 @@ function buildReportHtml(grouped, reportDate, totalCount) {
         </tr>`;
     });
 
+    const anchor = subject.toLowerCase().replace(/[^a-z0-9]/g, "-");
     categorySections += `
-      <details style="margin-bottom:16px;border:1px solid ${color}40;border-radius:12px;overflow:hidden;">
-        <summary style="cursor:pointer;list-style:none;padding:12px 16px;background:${color}12;border-left:4px solid ${color};display:flex;align-items:center;gap:10px;user-select:none;">
+      <div style="margin-bottom:32px;">
+        <a name="${anchor}" style="display:block;height:0;overflow:hidden;"></a>
+        <div style="padding:12px 16px;background:${color}12;border-left:4px solid ${color};border-radius:4px 8px 8px 4px;margin-bottom:10px;">
           <span style="font-size:14px;font-weight:800;color:${color};">${subject}</span>
-          <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">${requests.length} request${requests.length !== 1 ? "s" : ""}</span>
-          ${breachedCount > 0 ? `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">🔴 ${breachedCount} breached</span>` : ""}
-          ${urgentCount > 0 ? `<span style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">⏰ ${urgentCount} urgent</span>` : ""}
-          <span style="margin-left:auto;font-size:11px;color:#9ca3af;font-weight:400;">click to expand ▼</span>
-        </summary>
-        <table width="100%" cellpadding="0" cellspacing="0">
+          <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;margin-left:8px;">${requests.length} request${requests.length !== 1 ? "s" : ""}</span>
+          ${breachedCount > 0 ? `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;margin-left:4px;">🔴 ${breachedCount} breached</span>` : ""}
+          ${urgentCount > 0 ? `<span style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;margin-left:4px;">⏰ ${urgentCount} urgent</span>` : ""}
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
           <thead>
             <tr style="background:#f1f5f9;">
               <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Employee</th>
@@ -148,7 +161,7 @@ function buildReportHtml(grouped, reportDate, totalCount) {
           </thead>
           <tbody>${rows}</tbody>
         </table>
-      </details>`;
+      </div>`;
   }
 
   return `<!DOCTYPE html>
@@ -217,36 +230,38 @@ function buildReportHtml(grouped, reportDate, totalCount) {
         </td>
       </tr>
 
-      <!-- Category Breakdown Table (collapsible) -->
+      <!-- Category Breakdown Table -->
       <tr>
         <td style="padding:28px 40px 0;">
-          <details open style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-            <summary style="cursor:pointer;list-style:none;padding:14px 18px;background:#f8fafc;font-size:12px;font-weight:700;color:#1e3a6e;letter-spacing:1px;text-transform:uppercase;user-select:none;display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;">📊</span> Overall Category Breakdown
-              <span style="margin-left:auto;font-size:11px;color:#9ca3af;font-weight:400;">click to collapse ▲</span>
-            </summary>
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <thead>
-                <tr style="background:#f1f5f9;">
-                  <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Category</th>
-                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Total</th>
-                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Pending</th>
-                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">In Progress</th>
-                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Urgent</th>
-                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Breached</th>
-                </tr>
-              </thead>
-              <tbody>${breakdownRows}</tbody>
-            </table>
-          </details>
+          <p style="margin:0 0 12px;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">📊 Overall Category Breakdown</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Category (click to view)</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Total</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Pending</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">In Progress</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Urgent</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Breached</th>
+              </tr>
+            </thead>
+            <tbody>${breakdownRows}</tbody>
+          </table>
         </td>
       </tr>
 
-      <!-- Per-Category Detail (each collapsible) -->
+      <!-- Quick-jump category buttons -->
       <tr>
-        <td style="padding:28px 40px 16px;">
+        <td style="padding:20px 40px 0;">
+          <p style="margin:0 0 10px;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">Jump to Category</p>
+          <div style="line-height:2.2;">${categoryButtons}</div>
+        </td>
+      </tr>
+
+      <!-- Per-Category Detail -->
+      <tr>
+        <td style="padding:24px 40px 16px;">
           <p style="margin:0;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Requests by Category — Full Detail</p>
-          <p style="margin:6px 0 0;font-size:12px;color:#6b7280;">Click any category header below to expand or collapse its details.</p>
         </td>
       </tr>
 
