@@ -149,7 +149,7 @@ function HRTrackerList() {
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await base44.entities.HRRequest.list("-created_date", 200);
+    const data = await base44.entities.HRRequest.list("-created_date", 1000);
     setRequests(data);
     setLoading(false);
   };
