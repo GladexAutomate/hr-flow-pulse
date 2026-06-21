@@ -46,10 +46,19 @@ function getSLA(req) {
 
 function computeBreach(request) {
   if (request.status === "Waived/Cancelled") return "Waived";
-  if (request.status !== "Completed" || !request.date_started || !request.date_completed) return "Pending";
-  const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
-  const sla = getSLA(request);
-  return days <= sla ? "Valid" : "Breached";
+  if (request.status === "Completed") {
+    if (!request.date_started || !request.date_completed) return "Pending";
+    const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
+    const sla = getSLA(request);
+    return days <= sla ? "Valid" : "Breached";
+  }
+  // Still pending/in-progress — check if SLA has already expired since submission
+  if (request.created_date) {
+    const daysSinceCreated = differenceInDays(new Date(), new Date(request.created_date));
+    const sla = getSLA(request);
+    if (daysSinceCreated > sla) return "Breached";
+  }
+  return "Pending";
 }
 
 function hasNOD(req) {
