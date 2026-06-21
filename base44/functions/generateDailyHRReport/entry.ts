@@ -313,25 +313,54 @@ Deno.serve(async (req) => {
 
     const htmlBody = buildReportHtml(sortedGrouped, reportDate, openRequests.length);
 
-    // Get recipient settings
-    const recipientSetting = await base44.asServiceRole.entities.AppSettings.filter({ key: "daily_report_recipients" });
+    // Get settings
+    const [recipientSetting, webhookSetting] = await Promise.all([
+      base44.asServiceRole.entities.AppSettings.filter({ key: "daily_report_recipients" }),
+      base44.asServiceRole.entities.AppSettings.filter({ key: "daily_report_webhook_url" }),
+    ]);
+
     const recipientsRaw = recipientSetting[0]?.value || "";
     const recipients = recipientsRaw.split(",").map(e => e.trim()).filter(Boolean);
+    const webhookUrl = webhookSetting[0]?.value || "";
 
-    if (recipients.length === 0) {
-      return Response.json({ error: "No recipients configured. Please add emails in Settings." }, { status: 400 });
+    if (recipients.length === 0 && !webhookUrl) {
+      return Response.json({ error: "No recipients or webhook URL configured. Please add emails or a webhook URL in Settings." }, { status: 400 });
     }
 
-    const subject = `📊 Daily HR Tracker Report — ${openRequests.length} Open Requests · ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+    const emailSubject = `📊 Daily HR Tracker Report — ${openRequests.length} Open Requests · ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
     const results = [];
-    for (const email of recipients) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: email,
-        subject,
-        body: htmlBody,
+
+    // Send via webhook if configured (works for any external email/n8n/etc)
+    if (webhookUrl) {
+      const whRes = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: emailSubject,
+          html: htmlBody,
+          recipients,
+          total_open: openRequests.length,
+          report_date: reportDate,
+          generated_at: new Date().toISOString(),
+        }),
       });
-      results.push({ email, sent: true });
+      results.push({ webhook: webhookUrl, status: whRes.status, ok: whRes.ok });
+    }
+
+    // Also send via platform email for any registered app-user emails
+    for (const email of recipients) {
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: email,
+          subject: emailSubject,
+          body: htmlBody,
+        });
+        results.push({ email, sent: true });
+      } catch (e) {
+        // Platform email only works for registered users — skip silently
+        results.push({ email, sent: false, note: "Not a registered app user — use webhook for external delivery" });
+      }
     }
 
     return Response.json({
