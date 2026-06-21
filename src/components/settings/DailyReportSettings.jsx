@@ -83,7 +83,8 @@ export default function DailyReportSettings() {
     try {
       const res = await base44.functions.invoke("generateDailyHRReport", {});
       if (res.data?.success) {
-        setTestResult({ ok: true, msg: `Report sent to ${res.data.recipients?.length} recipient(s). ${res.data.total_open} open requests included.` });
+        const emailCount = res.data.recipients?.filter(r => r.email)?.length || 0;
+        setTestResult({ ok: true, msg: `Report sent to ${emailCount} recipient(s). ${res.data.total_open} open requests included.` });
       } else {
         setTestResult({ ok: false, msg: res.data?.error || "Unknown error" });
       }
