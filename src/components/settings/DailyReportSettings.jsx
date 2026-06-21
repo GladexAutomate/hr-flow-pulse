@@ -9,6 +9,8 @@ export default function DailyReportSettings() {
   const [time1, setTime1] = useState("09:00");
   const [time2, setTime2] = useState("17:00");
   const [saving, setSaving] = useState(false);
+  const [savingRecipients, setSavingRecipients] = useState(false);
+  const [savedRecipients, setSavedRecipients] = useState(false);
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [savedWebhook, setSavedWebhook] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -36,6 +38,15 @@ export default function DailyReportSettings() {
     } else {
       await base44.entities.AppSettings.create({ key, value });
     }
+  };
+
+  const handleSaveRecipients = async () => {
+    setSavingRecipients(true);
+    setSavedRecipients(false);
+    await upsertSetting("daily_report_recipients", recipients);
+    setSavingRecipients(false);
+    setSavedRecipients(true);
+    setTimeout(() => setSavedRecipients(false), 3000);
   };
 
   const handleSaveWebhook = async () => {
@@ -147,7 +158,18 @@ export default function DailyReportSettings() {
             <span className="text-xs text-gray-400 italic">No recipients added yet</span>
           )}
         </div>
-        <p className="text-xs text-gray-400">Separate multiple emails with commas.</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-400">Separate multiple emails with commas.</p>
+          <Button
+            size="sm"
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white"
+            onClick={handleSaveRecipients}
+            disabled={savingRecipients}
+          >
+            {savingRecipients ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedRecipients ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+            {savedRecipients ? "Saved!" : "Save Recipients"}
+          </Button>
+        </div>
       </div>
 
       {/* Schedule Times */}
