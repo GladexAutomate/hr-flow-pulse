@@ -35,19 +35,45 @@ function buildReportHtml(grouped, reportDate, totalCount) {
     "Others": "#6b7280",
   };
 
-  let categorySections = "";
+  const allRequests = Object.values(grouped).flat();
+  const totalBreached = allRequests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
+  const totalUrgent = allRequests.filter(r => { const rem = getSLA(r) - getDaysElapsed(r.created_date); return rem >= 0 && rem <= 2; }).length;
+  const totalPending = allRequests.filter(r => r.status === "Pending").length;
+  const totalInProgress = allRequests.filter(r => r.status === "In Progress").length;
 
+  // Build category breakdown summary rows
+  let breakdownRows = "";
+  for (const [subject, requests] of Object.entries(grouped)) {
+    const color = subjectColors[subject] || "#6b7280";
+    const breached = requests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
+    const urgent = requests.filter(r => { const rem = getSLA(r) - getDaysElapsed(r.created_date); return rem >= 0 && rem <= 2; }).length;
+    const pending = requests.filter(r => r.status === "Pending").length;
+    const inProg = requests.filter(r => r.status === "In Progress").length;
+    breakdownRows += `
+      <tr style="border-bottom:1px solid #f0f0f0;">
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:${color};white-space:nowrap;">
+          <span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>${subject}
+        </td>
+        <td style="padding:10px 14px;font-size:13px;font-weight:900;color:#111827;text-align:center;">${requests.length}</td>
+        <td style="padding:10px 14px;font-size:12px;color:#92400e;text-align:center;">${pending}</td>
+        <td style="padding:10px 14px;font-size:12px;color:#1e40af;text-align:center;">${inProg}</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:#d97706;text-align:center;">${urgent > 0 ? `⏰ ${urgent}` : "—"}</td>
+        <td style="padding:10px 14px;font-size:12px;font-weight:700;color:#dc2626;text-align:center;">${breached > 0 ? `🔴 ${breached}` : "—"}</td>
+      </tr>`;
+  }
+
+  // Build per-category detail sections
+  let categorySections = "";
   for (const [subject, requests] of Object.entries(grouped)) {
     const color = subjectColors[subject] || "#6b7280";
     const sortedRequests = [...requests].sort((a, b) => {
-      const aElapsed = getDaysElapsed(a.created_date);
-      const bElapsed = getDaysElapsed(b.created_date);
-      const aSLA = getSLA(a);
-      const bSLA = getSLA(b);
-      const aRemainingPct = (aSLA - aElapsed) / aSLA;
-      const bRemainingPct = (bSLA - bElapsed) / bSLA;
-      return aRemainingPct - bRemainingPct; // most urgent first
+      const aRem = getSLA(a) - getDaysElapsed(a.created_date);
+      const bRem = getSLA(b) - getDaysElapsed(b.created_date);
+      return aRem - bRem; // most urgent/overdue first
     });
+
+    const breachedCount = sortedRequests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
+    const urgentCount = sortedRequests.filter(r => { const rem = getSLA(r) - getDaysElapsed(r.created_date); return rem >= 0 && rem <= 2; }).length;
 
     let rows = "";
     sortedRequests.forEach((req, i) => {
@@ -58,92 +84,65 @@ function buildReportHtml(grouped, reportDate, totalCount) {
       const isBreached = remaining < 0;
       const isUrgent = remaining >= 0 && remaining <= 2;
 
-      let urgencyBadge = "";
-      let urgencyColor = "#10b981";
-      let urgencyBg = "#d1fae5";
-      let urgencyText = `${remaining}d left`;
-
-      if (isBreached) {
-        urgencyColor = "#dc2626";
-        urgencyBg = "#fee2e2";
-        urgencyText = `${Math.abs(remaining)}d overdue`;
-        urgencyBadge = `<span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;letter-spacing:0.5px;">BREACHED</span>`;
-      } else if (isUrgent) {
-        urgencyColor = "#d97706";
-        urgencyBg = "#fef3c7";
-        urgencyText = `${remaining}d left`;
-        urgencyBadge = `<span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;letter-spacing:0.5px;">URGENT</span>`;
-      }
+      const urgencyColor = isBreached ? "#dc2626" : isUrgent ? "#d97706" : "#10b981";
+      const urgencyBg = isBreached ? "#fee2e2" : isUrgent ? "#fef3c7" : "#d1fae5";
+      const urgencyText = isBreached ? `${Math.abs(remaining)}d overdue` : `${remaining}d left`;
+      const urgencyBadge = isBreached
+        ? `<span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;">BREACHED</span>`
+        : isUrgent
+        ? `<span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;">URGENT</span>`
+        : "";
 
       const barColor = isBreached ? "#dc2626" : isUrgent ? "#f59e0b" : "#10b981";
-
       const dateSubmitted = req.created_date
         ? new Date(req.created_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
         : "—";
-
-      const statusColors = {
-        "Pending": { bg: "#fef9c3", color: "#92400e" },
-        "In Progress": { bg: "#dbeafe", color: "#1e40af" },
-      };
-      const sc = statusColors[req.status] || { bg: "#f3f4f6", color: "#374151" };
-
+      const sc = req.status === "Pending" ? { bg: "#fef9c3", color: "#92400e" } : { bg: "#dbeafe", color: "#1e40af" };
       const rowBg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
 
       rows += `
         <tr style="background:${rowBg};">
-          <td style="padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#374151;vertical-align:middle;">
+          <td style="padding:11px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-align:middle;">
             <div style="font-weight:600;color:#111827;">${req.requested_by || "—"}</div>
-            <div style="color:#9ca3af;font-size:11px;margin-top:2px;">${req.email_address || ""}</div>
+            <div style="color:#9ca3af;font-size:11px;margin-top:1px;">${req.email_address || ""}</div>
             ${req.branch ? `<div style="color:#6b7280;font-size:11px;">${req.branch}</div>` : ""}
           </td>
-          <td style="padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#374151;white-space:nowrap;vertical-align:middle;">${dateSubmitted}</td>
-          <td style="padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-align:middle;white-space:nowrap;">
+          <td style="padding:11px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#374151;white-space:nowrap;vertical-align:middle;">${dateSubmitted}</td>
+          <td style="padding:11px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-align:middle;white-space:nowrap;">
             <span style="background:${sc.bg};color:${sc.color};font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;">${req.status}</span>
           </td>
-          <td style="padding:12px 14px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#374151;text-align:center;vertical-align:middle;white-space:nowrap;">
+          <td style="padding:11px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;text-align:center;vertical-align:middle;white-space:nowrap;">
             <span style="font-weight:700;color:#1e40af;">${sla}d</span>
-            <div style="font-size:10px;color:#9ca3af;margin-top:1px;">${elapsed}d elapsed</div>
+            <div style="font-size:10px;color:#9ca3af;">${elapsed}d elapsed</div>
           </td>
-          <td style="padding:12px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle;">
+          <td style="padding:11px 16px;border-bottom:1px solid #f0f0f0;vertical-align:middle;min-width:160px;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <div style="flex:1;background:#e5e7eb;border-radius:99px;height:6px;min-width:60px;">
-                <div style="background:${barColor};height:6px;border-radius:99px;width:${pct}%;max-width:100%;"></div>
+              <div style="width:80px;background:#e5e7eb;border-radius:99px;height:6px;">
+                <div style="background:${barColor};height:6px;border-radius:99px;width:${pct}%;"></div>
               </div>
-              <span style="background:${urgencyBg};color:${urgencyColor};font-size:11px;font-weight:700;padding:3px 10px;border-radius:8px;white-space:nowrap;">${urgencyText}</span>
+              <span style="background:${urgencyBg};color:${urgencyColor};font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;">${urgencyText}</span>
               ${urgencyBadge}
             </div>
           </td>
         </tr>`;
     });
 
-    const breachedCount = sortedRequests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
-    const urgentCount = sortedRequests.filter(r => {
-      const rem = getSLA(r) - getDaysElapsed(r.created_date);
-      return rem >= 0 && rem <= 2;
-    }).length;
-
     categorySections += `
-      <div style="margin-bottom:32px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:2px;">
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:${color}18;border-left:4px solid ${color};border-radius:4px 8px 8px 4px;margin-bottom:8px;">
-                <span style="font-size:15px;font-weight:800;color:${color};">${subject}</span>
-                <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;margin-left:4px;">${requests.length} request${requests.length !== 1 ? "s" : ""}</span>
-                ${breachedCount > 0 ? `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">⚠ ${breachedCount} breached</span>` : ""}
-                ${urgentCount > 0 ? `<span style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">⏰ ${urgentCount} urgent</span>` : ""}
-              </div>
-            </td>
-          </tr>
-        </table>
+      <div style="margin-bottom:36px;">
+        <div style="padding:10px 16px;background:${color}15;border-left:4px solid ${color};border-radius:4px 8px 8px 4px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:14px;font-weight:800;color:${color};">${subject}</span>
+          <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">${requests.length} request${requests.length !== 1 ? "s" : ""}</span>
+          ${breachedCount > 0 ? `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">🔴 ${breachedCount} breached</span>` : ""}
+          ${urgentCount > 0 ? `<span style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">⏰ ${urgentCount} urgent</span>` : ""}
+        </div>
         <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
           <thead>
             <tr style="background:#f1f5f9;">
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Employee</th>
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;">Date Submitted</th>
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Status</th>
-              <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;">SLA</th>
-              <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">SLA Progress</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Employee</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;">Date Submitted</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Status</th>
+              <th style="padding:10px 16px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;">SLA</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Progress</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -151,33 +150,27 @@ function buildReportHtml(grouped, reportDate, totalCount) {
       </div>`;
   }
 
-  const allRequests = Object.values(grouped).flat();
-  const totalBreached = allRequests.filter(r => getDaysElapsed(r.created_date) > getSLA(r)).length;
-  const totalUrgent = allRequests.filter(r => { const rem = getSLA(r) - getDaysElapsed(r.created_date); return rem >= 0 && rem <= 2; }).length;
-  const totalPending = allRequests.filter(r => r.status === "Pending").length;
-  const totalInProgress = allRequests.filter(r => r.status === "In Progress").length;
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Daily HR Report</title></head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
   <tr><td align="center">
-    <table width="700" cellpadding="0" cellspacing="0" style="max-width:700px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+    <table width="960" cellpadding="0" cellspacing="0" style="max-width:960px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
 
       <!-- Header -->
       <tr>
-        <td style="background:linear-gradient(135deg,#1e3a6e 0%,#1d4ed8 100%);padding:32px 36px 28px;">
+        <td style="background:linear-gradient(135deg,#1e3a6e 0%,#1d4ed8 100%);padding:32px 40px 28px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
                 <p style="margin:0 0 4px;font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;font-weight:700;">Gladex · HR Hub</p>
-                <h1 style="margin:0;font-size:26px;font-weight:900;color:#ffffff;line-height:1.2;">Daily HR Tracker Report</h1>
+                <h1 style="margin:0;font-size:28px;font-weight:900;color:#ffffff;line-height:1.2;">Daily HR Tracker Report</h1>
                 <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.65);">Generated on ${reportDate} · Open &amp; Pending Requests Only</p>
               </td>
               <td align="right" valign="middle">
-                <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px 20px;text-align:center;">
-                  <div style="font-size:36px;font-weight:900;color:#fff;line-height:1;">${totalCount}</div>
+                <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px 24px;text-align:center;">
+                  <div style="font-size:40px;font-weight:900;color:#fff;line-height:1;">${totalCount}</div>
                   <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:3px;font-weight:600;">OPEN REQUESTS</div>
                 </div>
               </td>
@@ -191,30 +184,30 @@ function buildReportHtml(grouped, reportDate, totalCount) {
 
       <!-- Summary Stats -->
       <tr>
-        <td style="padding:24px 36px 0;">
+        <td style="padding:28px 40px 0;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td width="25%" style="padding:0 6px 0 0;">
-                <div style="background:#eff6ff;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-size:24px;font-weight:900;color:#1d4ed8;">${totalPending}</div>
+              <td width="25%" style="padding:0 8px 0 0;">
+                <div style="background:#eff6ff;border-radius:10px;padding:16px;text-align:center;">
+                  <div style="font-size:28px;font-weight:900;color:#1d4ed8;">${totalPending}</div>
                   <div style="font-size:11px;color:#3b82f6;font-weight:700;margin-top:3px;">PENDING</div>
                 </div>
               </td>
-              <td width="25%" style="padding:0 6px;">
-                <div style="background:#f0fdf4;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-size:24px;font-weight:900;color:#16a34a;">${totalInProgress}</div>
+              <td width="25%" style="padding:0 8px;">
+                <div style="background:#f0fdf4;border-radius:10px;padding:16px;text-align:center;">
+                  <div style="font-size:28px;font-weight:900;color:#16a34a;">${totalInProgress}</div>
                   <div style="font-size:11px;color:#22c55e;font-weight:700;margin-top:3px;">IN PROGRESS</div>
                 </div>
               </td>
-              <td width="25%" style="padding:0 6px;">
-                <div style="background:#fefce8;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-size:24px;font-weight:900;color:#b45309;">${totalUrgent}</div>
+              <td width="25%" style="padding:0 8px;">
+                <div style="background:#fefce8;border-radius:10px;padding:16px;text-align:center;">
+                  <div style="font-size:28px;font-weight:900;color:#b45309;">${totalUrgent}</div>
                   <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:3px;">URGENT (≤2d)</div>
                 </div>
               </td>
-              <td width="25%" style="padding:0 0 0 6px;">
-                <div style="background:#fef2f2;border-radius:10px;padding:14px;text-align:center;">
-                  <div style="font-size:24px;font-weight:900;color:#dc2626;">${totalBreached}</div>
+              <td width="25%" style="padding:0 0 0 8px;">
+                <div style="background:#fef2f2;border-radius:10px;padding:16px;text-align:center;">
+                  <div style="font-size:28px;font-weight:900;color:#dc2626;">${totalBreached}</div>
                   <div style="font-size:11px;color:#ef4444;font-weight:700;margin-top:3px;">BREACHED</div>
                 </div>
               </td>
@@ -223,29 +216,49 @@ function buildReportHtml(grouped, reportDate, totalCount) {
         </td>
       </tr>
 
-      <!-- Divider -->
+      <!-- Category Breakdown Table -->
       <tr>
-        <td style="padding:24px 36px 16px;">
-          <p style="margin:0;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Requests by Category</p>
+        <td style="padding:28px 40px 0;">
+          <p style="margin:0 0 12px;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Category Breakdown</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Category</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Total</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Pending</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">In Progress</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Urgent</th>
+                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Breached</th>
+              </tr>
+            </thead>
+            <tbody>${breakdownRows}</tbody>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Per-Category Detail Header -->
+      <tr>
+        <td style="padding:28px 40px 16px;">
+          <p style="margin:0;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Requests by Category — Full Detail</p>
         </td>
       </tr>
 
       <!-- Categories -->
       <tr>
-        <td style="padding:0 36px 24px;">
+        <td style="padding:0 40px 28px;">
           ${categorySections}
         </td>
       </tr>
 
       <!-- Legend -->
       <tr>
-        <td style="padding:0 36px 28px;">
+        <td style="padding:0 40px 28px;">
           <div style="background:#f8fafc;border-radius:10px;padding:14px 18px;">
             <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Legend</p>
             <table cellpadding="0" cellspacing="0">
               <tr>
-                <td style="padding-right:20px;font-size:12px;color:#374151;white-space:nowrap;">🟢 <strong>On Track</strong> — more than 2 days remaining</td>
-                <td style="padding-right:20px;font-size:12px;color:#374151;white-space:nowrap;">🟡 <strong>Urgent</strong> — 0–2 days remaining</td>
+                <td style="padding-right:24px;font-size:12px;color:#374151;white-space:nowrap;">🟢 <strong>On Track</strong> — more than 2 days remaining</td>
+                <td style="padding-right:24px;font-size:12px;color:#374151;white-space:nowrap;">🟡 <strong>Urgent</strong> — 0–2 days remaining</td>
                 <td style="font-size:12px;color:#374151;white-space:nowrap;">🔴 <strong>Breached</strong> — SLA exceeded</td>
               </tr>
             </table>
@@ -255,7 +268,7 @@ function buildReportHtml(grouped, reportDate, totalCount) {
 
       <!-- Footer -->
       <tr>
-        <td style="background:#1e3a6e;padding:20px 36px;">
+        <td style="background:#1e3a6e;padding:20px 40px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
