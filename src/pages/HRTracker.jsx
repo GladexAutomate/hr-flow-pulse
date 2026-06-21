@@ -149,7 +149,7 @@ function HRTrackerList() {
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await base44.entities.HRRequest.list("-created_date", 1000);
+    const data = await base44.entities.HRRequest.list("-created_date", 2000);
     setRequests(data);
     setLoading(false);
   };
@@ -364,7 +364,7 @@ function HRTrackerList() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto" style={{ overflowY: "auto", maxHeight: "calc(100vh - 280px)" }}>
+            <div className="overflow-x-auto" style={{ overflowY: "auto", maxHeight: "calc(100vh - 340px)" }}>
             <table className="w-full text-sm">
               <thead className="bg-gradient-to-r from-blue-800 to-blue-900 text-white sticky top-0 z-10">
                 <tr>
@@ -483,13 +483,13 @@ function HRTrackerList() {
               </tbody>
             </table>
             </div>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-                <span className="text-sm text-gray-500">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} records
-                </span>
-                <div className="flex gap-1">
+            {/* Pagination — outside scroll container so it's always visible */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white">
+              <span className="text-sm text-gray-500">
+                Showing {filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} records
+              </span>
+              {totalPages > 1 && (
+                <div className="flex gap-1 flex-wrap">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
@@ -507,8 +507,8 @@ function HRTrackerList() {
                     className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium disabled:opacity-40 hover:bg-gray-50"
                   >Next →</button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </div>
