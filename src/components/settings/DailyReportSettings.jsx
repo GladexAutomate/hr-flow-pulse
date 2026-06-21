@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Mail, Clock, Send, Save, Loader2, CheckCircle, Users } from "lucide-react";
+import { Mail, Clock, Send, Save, Loader2, CheckCircle, Users, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DailyReportSettings() {
   const [recipients, setRecipients] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [time1, setTime1] = useState("09:00");
   const [time2, setTime2] = useState("17:00");
   const [saving, setSaving] = useState(false);
+  const [savingWebhook, setSavingWebhook] = useState(false);
+  const [savedWebhook, setSavedWebhook] = useState(false);
   const [testing, setTesting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -20,6 +23,8 @@ export default function DailyReportSettings() {
       if (t1[0]) setTime1(t1[0].value);
       const t2 = await base44.entities.AppSettings.filter({ key: "daily_report_time_2" });
       if (t2[0]) setTime2(t2[0].value);
+      const wh = await base44.entities.AppSettings.filter({ key: "daily_report_webhook_url" });
+      if (wh[0]) setWebhookUrl(wh[0].value);
     }
     load();
   }, []);
@@ -31,6 +36,15 @@ export default function DailyReportSettings() {
     } else {
       await base44.entities.AppSettings.create({ key, value });
     }
+  };
+
+  const handleSaveWebhook = async () => {
+    setSavingWebhook(true);
+    setSavedWebhook(false);
+    await upsertSetting("daily_report_webhook_url", webhookUrl);
+    setSavingWebhook(false);
+    setSavedWebhook(true);
+    setTimeout(() => setSavedWebhook(false), 3000);
   };
 
   const handleSave = async () => {
@@ -77,6 +91,31 @@ export default function DailyReportSettings() {
           including SLA progress, breach alerts, and urgency indicators.
         </p>
       </div>
+
+      {/* Webhook URL */}
+      <div className="space-y-1.5">
+        <p className="font-semibold text-gray-800">Daily HR Report Webhook</p>
+        <p className="text-sm text-gray-500">Fired when the daily report is generated. Sends the report data as a POST request to this URL.</p>
+        <div className="flex gap-2 mt-2">
+          <input
+            type="url"
+            value={webhookUrl}
+            onChange={e => setWebhookUrl(e.target.value)}
+            placeholder="https://your-webhook-url.com/..."
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          />
+          <Button
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white px-4"
+            onClick={handleSaveWebhook}
+            disabled={savingWebhook}
+          >
+            {savingWebhook ? <Loader2 className="w-4 h-4 animate-spin" /> : savedWebhook ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {savedWebhook ? "Saved!" : "Save"}
+          </Button>
+        </div>
+      </div>
+
+      <hr className="border-gray-100" />
 
       {/* Recipients */}
       <div className="space-y-2">
