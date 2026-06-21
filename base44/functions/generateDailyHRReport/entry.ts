@@ -128,14 +128,15 @@ function buildReportHtml(grouped, reportDate, totalCount) {
     });
 
     categorySections += `
-      <div style="margin-bottom:36px;">
-        <div style="padding:10px 16px;background:${color}15;border-left:4px solid ${color};border-radius:4px 8px 8px 4px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+      <details style="margin-bottom:16px;border:1px solid ${color}40;border-radius:12px;overflow:hidden;">
+        <summary style="cursor:pointer;list-style:none;padding:12px 16px;background:${color}12;border-left:4px solid ${color};display:flex;align-items:center;gap:10px;user-select:none;">
           <span style="font-size:14px;font-weight:800;color:${color};">${subject}</span>
           <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">${requests.length} request${requests.length !== 1 ? "s" : ""}</span>
           ${breachedCount > 0 ? `<span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">🔴 ${breachedCount} breached</span>` : ""}
           ${urgentCount > 0 ? `<span style="background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;">⏰ ${urgentCount} urgent</span>` : ""}
-        </div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+          <span style="margin-left:auto;font-size:11px;color:#9ca3af;font-weight:400;">click to expand ▼</span>
+        </summary>
+        <table width="100%" cellpadding="0" cellspacing="0">
           <thead>
             <tr style="background:#f1f5f9;">
               <th style="padding:10px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Employee</th>
@@ -147,7 +148,7 @@ function buildReportHtml(grouped, reportDate, totalCount) {
           </thead>
           <tbody>${rows}</tbody>
         </table>
-      </div>`;
+      </details>`;
   }
 
   return `<!DOCTYPE html>
@@ -216,30 +217,36 @@ function buildReportHtml(grouped, reportDate, totalCount) {
         </td>
       </tr>
 
-      <!-- Category Breakdown Table -->
+      <!-- Category Breakdown Table (collapsible) -->
       <tr>
         <td style="padding:28px 40px 0;">
-          <p style="margin:0 0 12px;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Category Breakdown</p>
-          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
-            <thead>
-              <tr style="background:#f1f5f9;">
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Category</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Total</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Pending</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">In Progress</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Urgent</th>
-                <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Breached</th>
-              </tr>
-            </thead>
-            <tbody>${breakdownRows}</tbody>
-          </table>
+          <details open style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+            <summary style="cursor:pointer;list-style:none;padding:14px 18px;background:#f8fafc;font-size:12px;font-weight:700;color:#1e3a6e;letter-spacing:1px;text-transform:uppercase;user-select:none;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">📊</span> Overall Category Breakdown
+              <span style="margin-left:auto;font-size:11px;color:#9ca3af;font-weight:400;">click to collapse ▲</span>
+            </summary>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <thead>
+                <tr style="background:#f1f5f9;">
+                  <th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Category</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Total</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Pending</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">In Progress</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Urgent</th>
+                  <th style="padding:10px 14px;text-align:center;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Breached</th>
+                </tr>
+              </thead>
+              <tbody>${breakdownRows}</tbody>
+            </table>
+          </details>
         </td>
       </tr>
 
-      <!-- Per-Category Detail Header -->
+      <!-- Per-Category Detail (each collapsible) -->
       <tr>
         <td style="padding:28px 40px 16px;">
           <p style="margin:0;font-size:11px;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-bottom:2px solid #f3f4f6;padding-bottom:8px;">Requests by Category — Full Detail</p>
+          <p style="margin:6px 0 0;font-size:12px;color:#6b7280;">Click any category header below to expand or collapse its details.</p>
         </td>
       </tr>
 
