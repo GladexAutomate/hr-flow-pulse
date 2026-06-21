@@ -61,8 +61,14 @@ export default function DailyReportSettings() {
   };
 
   const handleTest = async () => {
+    if (emailList.length === 0) {
+      setTestResult({ ok: false, msg: "Please enter at least one recipient email and save settings first." });
+      return;
+    }
     setTesting(true);
     setTestResult(null);
+    // Auto-save recipients before sending so the backend can read them
+    await upsertSetting("daily_report_recipients", recipients);
     try {
       const res = await base44.functions.invoke("generateDailyHRReport", {});
       if (res.data?.success) {
