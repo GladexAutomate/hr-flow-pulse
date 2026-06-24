@@ -83,6 +83,7 @@ export default function RequestForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -136,6 +137,10 @@ export default function RequestForm() {
   const showFile = ["NTE Request", "Resource Request", "General Announcement Request", "WFH Request", "COE (Certificate of Employment)", "Others"].includes(subject);
 
   if (submitted) {
+    const requestedBy = form.requested_by || "—";
+    const shortDescription =
+      form.details || form.purpose || form.reason_of_atd || form.compensation_summary || "—";
+    const isLongDescription = shortDescription.length > 140;
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-blue-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-xl p-12 text-center max-w-md w-full">
@@ -150,12 +155,29 @@ export default function RequestForm() {
               <span className="text-gray-800 font-semibold">{subject}</span>
             </div>
             <div className="flex justify-between text-sm">
+              <span className="text-gray-500 font-medium">Requested by</span>
+              <span className="text-gray-800 font-semibold">{requestedBy}</span>
+            </div>
+            <div className="flex justify-between text-sm">
               <span className="text-gray-500 font-medium">Date Submitted</span>
               <span className="text-gray-800 font-semibold">{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
             </div>
+            <div className="text-sm">
+              <span className="text-gray-500 font-medium">Short description</span>
+              <p className={`text-gray-800 font-semibold mt-1 whitespace-pre-wrap break-words ${isLongDescription && !descExpanded ? "line-clamp-3" : ""}`}>{shortDescription}</p>
+              {isLongDescription && (
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded(v => !v)}
+                  className="text-orange-500 hover:text-orange-600 font-semibold text-xs mt-1 focus:outline-none"
+                >
+                  {descExpanded ? "Show less" : "Show more"}
+                </button>
+              )}
+            </div>
           </div>
           <button
-            onClick={() => { setSubmitted(false); setSubject(""); setForm({}); setFile(null); }}
+            onClick={() => { setSubmitted(false); setSubject(""); setForm({}); setFile(null); setDescExpanded(false); }}
             className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-xl transition-all"
           >
             Submit Another Request
