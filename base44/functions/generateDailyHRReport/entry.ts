@@ -383,18 +383,22 @@ Deno.serve(async (req) => {
       results.push({ webhook: webhookUrl, status: whRes.status, ok: whRes.ok });
     }
 
-    // Also send via platform email for any registered app-user emails
-    for (const email of recipients) {
-      try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: email,
-          subject: emailSubject,
-          body: htmlBody,
-        });
-        results.push({ email, sent: true });
-      } catch (e) {
-        // Platform email only works for registered users — skip silently
-        results.push({ email, sent: false, note: "Not a registered app user — use webhook for external delivery" });
+    // Send via platform email ONLY when no webhook is configured.
+    // When a webhook is set, it already delivers to all recipients — sending
+    // again here would deliver the same report twice (duplicate emails).
+    if (!webhookUrl) {
+      for (const email of recipients) {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: email,
+            subject: emailSubject,
+            body: htmlBody,
+          });
+          results.push({ email, sent: true });
+        } catch (e) {
+          // Platform email only works for registered users — skip silently
+          results.push({ email, sent: false, note: "Not a registered app user — use webhook for external delivery" });
+        }
       }
     }
 
