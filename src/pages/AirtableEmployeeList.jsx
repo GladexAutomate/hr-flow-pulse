@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { fetchEmployeesFromSupabase } from "@/lib/employeeSource";
 import { RefreshCw, Search, Users } from "lucide-react";
-import OrgAssignCell from "@/components/airtable/OrgAssignCell";
 
 const STATUS_COLORS = {
   "ACTIVE": "bg-green-100 text-green-700",
@@ -12,44 +11,32 @@ const STATUS_COLORS = {
 export default function AirtableEmployeeList() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [syncMsg, setSyncMsg] = useState(null);
-
-  // Org hierarchy data
-  const [companies, setCompanies] = useState([]);
-  const [allTeams, setAllTeams] = useState([]);
+  const [error, setError] = useState(null);
 
   const fetchEmployees = async () => {
-    setLoading(true);
-    const data = await base44.entities.AirtableEmployee.list("full_name", 500);
-    setEmployees(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const data = await fetchEmployeesFromSupabase();
+      setEmployees(data);
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   useEffect(() => {
-    fetchEmployees();
-    // Load org hierarchy in parallel
-    Promise.all([
-      base44.entities.Company.list(),
-      base44.entities.Team.list(),
-    ]).then(([c, t]) => {
-      setCompanies(c);
-      setAllTeams(t);
-    });
+    (async () => {
+      setLoading(true);
+      await fetchEmployees();
+      setLoading(false);
+    })();
   }, []);
 
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncMsg(null);
-    const res = await base44.functions.invoke("fetchAirtableEmployees", {});
-    setSyncMsg(`Sync complete — ${res.data.total} records (${res.data.created} created, ${res.data.updated} updated)`);
+  const handleRefresh = async () => {
+    setRefreshing(true);
     await fetchEmployees();
-    setSyncing(false);
-  };
-
-  const handleEmpSaved = (updated) => {
-    setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+    setRefreshing(false);
   };
 
   const filtered = employees.filter(e => {
@@ -59,7 +46,8 @@ export default function AirtableEmployeeList() {
       e.branch?.toLowerCase().includes(q) ||
       e.department?.toLowerCase().includes(q) ||
       e.position?.toLowerCase().includes(q) ||
-      e.status?.toLowerCase().includes(q)
+      e.status?.toLowerCase().includes(q) ||
+      e.employee_code?.toLowerCase().includes(q)
     );
   });
 
@@ -69,21 +57,21 @@ export default function AirtableEmployeeList() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-800">Airtable Employee List</h1>
-          <p className="text-gray-500 text-sm mt-1">{employees.length} employees synced from Airtable</p>
+          <p className="text-gray-500 text-sm mt-1">{employees.length} employees from Supabase</p>
         </div>
         <button
-          onClick={handleSync}
-          disabled={syncing}
+          onClick={handleRefresh}
+          disabled={refreshing}
           className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-semibold px-4 py-2.5 rounded-xl transition-all text-sm"
         >
-          <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing..." : "Sync from Airtable"}
+          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
-      {syncMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm font-medium">
-          {syncMsg}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">
+          Failed to load employees: {error}
         </div>
       )}
 
@@ -107,7 +95,7 @@ export default function AirtableEmployeeList() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>{employees.length === 0 ? 'No data yet. Click "Sync from Airtable" to load employees.' : "No results found."}</p>
+            <p>{employees.length === 0 ? "No employee records found in Supabase." : "No results found."}</p>
           </div>
         ) : (
           <div className="overflow-x-auto" style={{ maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
@@ -120,9 +108,7 @@ export default function AirtableEmployeeList() {
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">AT Department</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Job Title</th>
                   <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap" colSpan={4}>
-                    Org Assignment (Company › Branch › Dept › Team)
-                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wide whitespace-nowrap">Employee Code</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -138,11 +124,7 @@ export default function AirtableEmployeeList() {
                         {emp.status || "—"}
                       </span>
                     </td>
-                    <OrgAssignCell
-                      emp={emp}
-                      companies={companies}
-                      onSaved={handleEmpSaved}
-                    />
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{emp.employee_code || "—"}</td>
                   </tr>
                 ))}
               </tbody>
