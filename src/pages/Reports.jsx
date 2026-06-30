@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { computeBreach } from "@/lib/sla";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { isWithinInterval, parseISO, getMonth, getYear, startOfWeek, endOfWeek, format, eachWeekOfInterval, eachDayOfInterval, startOfDay, endOfDay } from "date-fns";
 import { TrendingUp, CheckCircle, AlertTriangle, Clock, XCircle, Calendar } from "lucide-react";
@@ -132,7 +133,10 @@ export default function Reports() {
 
   useEffect(() => {
     base44.entities.HRRequest.list("-created_date", 1000).then(data => {
-      setRequests(data);
+      // Recompute breach status live instead of trusting the stored field, which
+      // is only written on manual save and goes stale for aging open requests.
+      // This keeps Reports in sync with the Daily HR Tracker Report.
+      setRequests(data.map(r => ({ ...r, breach_status: computeBreach(r) })));
       setLoading(false);
     });
   }, []);

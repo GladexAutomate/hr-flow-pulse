@@ -1,19 +1,22 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const SLA_MAP = {
+// Single source of truth for SLA day-counts.
+// Keep this in sync with src/lib/sla.js (BASE_SLA / RESOURCE_SLA).
+const RESOURCE_SLA = { "Rank and File": 15, "Supervisory": 20, "Managerial": 30 };
+const BASE_SLA = {
   "NTE Request": 8,
-  "Resource Request": 15,
-  "General Announcement Request": 3,
+  "General Announcement Request": 2,
   "WFH Request": 2,
-  "COE (Certificate of Employment)": 5,
+  "COE (Certificate of Employment)": 2,
   "ITR (Income Tax Return)": 7,
   "LAST PAY": 30,
-  "ATD (Authority to Deduct)": 5,
+  "ATD (Authority to Deduct)": 7,
   "Others": 7,
 };
 
 function getSLA(req) {
-  return req.sla_days || SLA_MAP[req.subject] || 7;
+  if (req.subject === "Resource Request") return RESOURCE_SLA[req.resource_type] || req.sla_days || 15;
+  return BASE_SLA[req.subject] || req.sla_days || 7;
 }
 
 function getDaysElapsed(dateStr) {

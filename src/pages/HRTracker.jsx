@@ -7,7 +7,8 @@ import RecordTimeline from "../components/RecordTimeline";
 import MobileRequestCard from "../components/MobileRequestCard";
 import PullToRefresh from "../components/PullToRefresh";
 import { base44 } from "@/api/base44Client";
-import { differenceInDays, parseISO, format } from "date-fns";
+import { computeBreach, getSLA } from "@/lib/sla";
+import { format } from "date-fns";
 import { Search, ExternalLink, Edit3, X, Save, ClipboardList, Eye, Paperclip } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -26,40 +27,6 @@ const BREACH_COLORS = {
   "Pending": "bg-gray-100 text-gray-500",
   "Waived": "bg-purple-100 text-purple-500",
 };
-
-const RESOURCE_SLA = { "Rank and File": 15, "Supervisory": 20, "Managerial": 30 };
-const BASE_SLA = {
-  "NTE Request": 8,
-  "General Announcement Request": 2,
-  "WFH Request": 2,
-  "COE (Certificate of Employment)": 2,
-  "ITR (Income Tax Return)": 7,
-  "LAST PAY": 30,
-  "ATD (Authority to Deduct)": 7,
-  "Others": 7,
-};
-
-function getSLA(req) {
-  if (req.subject === "Resource Request") return RESOURCE_SLA[req.resource_type] || req.sla_days || 15;
-  return BASE_SLA[req.subject] || req.sla_days || 7;
-}
-
-function computeBreach(request) {
-  if (request.status === "Waived/Cancelled") return "Waived";
-  if (request.status === "Completed") {
-    if (!request.date_started || !request.date_completed) return "Pending";
-    const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
-    const sla = getSLA(request);
-    return days <= sla ? "Valid" : "Breached";
-  }
-  // Still pending/in-progress — check if SLA has already expired since submission
-  if (request.created_date) {
-    const daysSinceCreated = differenceInDays(new Date(), new Date(request.created_date));
-    const sla = getSLA(request);
-    if (daysSinceCreated > sla) return "Breached";
-  }
-  return "Pending";
-}
 
 function hasNOD(req) {
   if (req.subject !== "NTE Request") return true;
