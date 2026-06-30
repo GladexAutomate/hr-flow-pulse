@@ -26,7 +26,12 @@ export function getSLA(req) {
 // Returns one of: "Waived" | "Valid" | "Breached" | "Pending"
 export function computeBreach(request) {
   if (request.status === "Waived/Cancelled") return "Waived";
-  if (request.status === "Completed") {
+  // A request that has a completion date is finished — evaluate it on completion
+  // timing even if its status was never flipped to "Completed" (the data can be
+  // inconsistent: some records carry date_completed while still "In Progress").
+  // Without this, such records fall through to the open-aging branch below and
+  // get falsely flagged as breached based on created_date.
+  if (request.status === "Completed" || request.date_completed) {
     if (!request.date_started || !request.date_completed) return "Pending";
     const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
     const sla = getSLA(request);

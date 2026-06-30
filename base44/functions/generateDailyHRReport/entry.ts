@@ -321,10 +321,13 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Load all open (non-completed) requests
+    // Load all open (non-completed) requests.
+    // A record that already has a date_completed is finished even if its status was
+    // never flipped from "In Progress" (data can be inconsistent) — exclude it so it
+    // neither appears in this open-only report nor inflates the breach count.
     const allRequests = await base44.asServiceRole.entities.HRRequest.list("-created_date", 2000);
     const openRequests = allRequests.filter(r =>
-      r.status === "Pending" || r.status === "In Progress"
+      (r.status === "Pending" || r.status === "In Progress") && !r.date_completed
     );
 
     // Group by subject

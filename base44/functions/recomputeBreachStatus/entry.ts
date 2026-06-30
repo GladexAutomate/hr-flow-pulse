@@ -24,7 +24,9 @@ function getSLA(req) {
 // Mirrors computeBreach() in src/lib/sla.js exactly.
 function computeBreach(request) {
   if (request.status === "Waived/Cancelled") return "Waived";
-  if (request.status === "Completed") {
+  // A request with a completion date is finished — evaluate completion timing even
+  // if its status was never flipped to "Completed". Mirrors src/lib/sla.js.
+  if (request.status === "Completed" || request.date_completed) {
     if (!request.date_started || !request.date_completed) return "Pending";
     const days = differenceInDays(parseISO(request.date_completed), parseISO(request.date_started));
     const sla = getSLA(request);
