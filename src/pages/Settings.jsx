@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import WebhookSettings from "@/components/settings/WebhookSettings";
 import ExportScheduleModule from "@/components/settings/ExportScheduleModule";
 import DailyReportSettings from "@/components/settings/DailyReportSettings";
+import SlaSettings from "@/components/settings/SlaSettings";
 
 const HR_FORM_URL = `${window.location.origin}/request-form`;
 
@@ -56,6 +57,9 @@ export default function Settings() {
           <LogOut className="w-4 h-4" /> Sign Out
         </Button>
       </div>
+
+      {/* SLA Settings */}
+      <SlaSettings />
 
       {/* Export Schedule Module */}
       <ExportScheduleModule />

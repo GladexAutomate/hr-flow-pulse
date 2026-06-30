@@ -15,8 +15,11 @@ const BASE_SLA = {
 };
 
 function getSLA(req) {
-  if (req.subject === "Resource Request") return RESOURCE_SLA[req.resource_type] || req.sla_days || 15;
-  return BASE_SLA[req.subject] || req.sla_days || 7;
+  // Prefer the record's frozen sla_days so SLA-setting changes never retroactively
+  // alter existing records' breach status; fall back to factory defaults.
+  if (req.sla_days) return req.sla_days;
+  if (req.subject === "Resource Request") return RESOURCE_SLA[req.resource_type] || 15;
+  return BASE_SLA[req.subject] || 7;
 }
 
 function getDaysElapsed(dateStr) {

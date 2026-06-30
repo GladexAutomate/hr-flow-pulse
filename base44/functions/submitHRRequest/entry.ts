@@ -1,9 +1,42 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+// SLA defaults — mirror src/lib/sla.js. Editable overrides live in AppSettings
+// under the "sla_settings" key and are applied here, at creation time only.
+const DEFAULT_RESOURCE_SLA = { "Rank and File": 15, "Supervisory": 20, "Managerial": 30 };
+const DEFAULT_BASE_SLA = {
+  "NTE Request": 8,
+  "General Announcement Request": 2,
+  "WFH Request": 2,
+  "COE (Certificate of Employment)": 2,
+  "ITR (Income Tax Return)": 7,
+  "LAST PAY": 30,
+  "ATD (Authority to Deduct)": 7,
+  "Others": 7,
+};
+
+function slaForNewRequest(settings, subject, resourceType) {
+  const s = settings || {};
+  if (subject === "Resource Request") {
+    const tiers = s["Resource Request"] || {};
+    return tiers[resourceType] || DEFAULT_RESOURCE_SLA[resourceType] || 15;
+  }
+  return s[subject] || DEFAULT_BASE_SLA[subject] || 7;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { file_base64, file_name, ...data } = await req.json();
+
+    // Stamp the SLA from the configured settings so each record freezes the SLA
+    // that applied when it was created. Later edits to SLA settings won't change
+    // existing records' breach evaluation.
+    let slaSettings = null;
+    try {
+      const rows = await base44.asServiceRole.entities.AppSettings.filter({ key: "sla_settings" });
+      if (rows[0]?.value) slaSettings = JSON.parse(rows[0].value);
+    } catch (_) { /* fall back to defaults */ }
+    data.sla_days = slaForNewRequest(slaSettings, data.subject, data.resource_type);
 
     // Upload file using service role if provided
     if (file_base64 && file_name) {
