@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     if (eventType === "delete") {
       // Delete from Supabase
-      await supabaseRequest(`/hr_requests?base44_id=eq.${entityId}`, "DELETE");
+      await supabaseRequest(`/hr_requests?base44_id=eq.${encodeURIComponent(entityId)}`, "DELETE");
       return Response.json({ success: true, action: "deleted", id: entityId });
     }
 
@@ -63,12 +63,14 @@ Deno.serve(async (req) => {
       compensation_summary: record.compensation_summary || null,
       amount: record.amount || null,
       reason_of_atd: record.reason_of_atd || null,
+      // NOTE: nte_to is intentionally NOT synced yet — add an `nte_to` column to the
+      // Supabase hr_requests table first, then add `nte_to: record.nte_to || null` here.
       file_url: record.file_url || null,
       completion_file_url: record.completion_file_url || null,
       status: record.status || "Pending",
       date_started: record.date_started || null,
       date_completed: record.date_completed || null,
-      sla_days: record.sla_days || null,
+      sla_days: record.sla_days ?? null,
       breach_status: record.breach_status || "Pending",
       hr_attachments: record.hr_attachments ? JSON.stringify(record.hr_attachments) : null,
       timeline: record.timeline ? JSON.stringify(record.timeline) : null,

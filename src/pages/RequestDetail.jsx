@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import HRAttachmentsPanel from "../components/HRAttachmentsPanel";
 import RecordTimeline from "../components/RecordTimeline";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function RequestDetail() {
   const { id } = useParams();

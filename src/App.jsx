@@ -15,15 +15,7 @@ import RequestForm from './pages/RequestForm';
 import UserManagement from './pages/UserManagement';
 import Settings from './pages/Settings';
 import RequestDetail from './pages/RequestDetail';
-import EmployeeAttendance from './pages/EmployeeAttendance';
-import AttendanceProposalForm from './pages/AttendanceProposalForm';
-import AttendanceScheduler from './pages/AttendanceScheduler';
-import AttendanceRequests from './pages/AttendanceRequests';
 import AirtableEmployeeList from './pages/AirtableEmployeeList';
-import PublicSchedule from './pages/PublicSchedule';
-import ScheduleDashboard from './pages/ScheduleDashboard';
-import NavigationLibrary from './pages/NavigationLibrary';
-import WebhookPayloadDebugger from './pages/WebhookPayloadDebugger';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -101,39 +93,13 @@ const AuthenticatedApp = () => {
               <RequestDetail />
             </motion.div>
           } />
-          <Route path="/attendance" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <EmployeeAttendance />
-            </motion.div>
-          } />
-          <Route path="/attendance-requests" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <AttendanceRequests />
-            </motion.div>
-          } />
           <Route path="/airtable-employees" element={
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
               <AirtableEmployeeList />
             </motion.div>
           } />
-          <Route path="/schedule-dashboard" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <ScheduleDashboard />
-            </motion.div>
-          } />
-          <Route path="/links" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <NavigationLibrary />
-            </motion.div>
-          } />
-          <Route path="/webhook-debugger" element={
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.18 }}>
-              <WebhookPayloadDebugger />
-            </motion.div>
-          } />
 
         </Route>
-        <Route path="/schedule/:branch/:department" element={<PublicSchedule />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </AnimatePresence>
@@ -150,8 +116,6 @@ function App() {
         <Router>
           <Routes>
             <Route path="/request-form" element={<RequestForm />} />
-            <Route path="/attendance-proposal" element={<AttendanceProposalForm />} />
-            <Route path="/attendance-scheduler/:id" element={<AttendanceScheduler />} />
             <Route path="*" element={<AuthenticatedApp />} />
             </Routes>
         </Router>

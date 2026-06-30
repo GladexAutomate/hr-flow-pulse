@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Mail, Clock, Send, Save, Loader2, CheckCircle, Users, Link } from "lucide-react";
+import { Mail, Clock, Send, Save, Loader2, CheckCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DailyReportSettings() {

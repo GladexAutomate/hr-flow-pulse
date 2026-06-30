@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { computeBreach } from "@/lib/sla";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { isWithinInterval, parseISO, getMonth, getYear, startOfWeek, endOfWeek, format, eachWeekOfInterval, eachDayOfInterval, startOfDay, endOfDay } from "date-fns";
+import { isWithinInterval, parseISO, getMonth, getYear, endOfWeek, format, eachWeekOfInterval, eachDayOfInterval, startOfDay, endOfDay } from "date-fns";
 import { TrendingUp, CheckCircle, AlertTriangle, Clock, XCircle, Calendar } from "lucide-react";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -141,12 +141,15 @@ export default function Reports() {
     });
   }, []);
 
-  const years = [...new Set(requests.map(r => getYear(new Date(r.created_date))))].sort().reverse();
+  const years = [...new Set(requests.map(r => getYear(new Date(r.created_date))))].filter(y => !Number.isNaN(y)).sort().reverse();
   const activeFacet = FACETS.find(f => f.key === activeTab);
   // Exclude waived/cancelled from breach reporting
   const facetRequests = requests.filter(activeFacet.filter).filter(r => r.breach_status !== "Waived");
   const filteredRequests = filterByDateRange(facetRequests, viewMode, year, startDate, endDate);
-  const chartData = getDateRangeData(facetRequests, viewMode, year, startDate, endDate);
+  // Build the chart/table from the SAME date-filtered set as the summary cards, so
+  // the two always reconcile and boundary records outside the range can't leak into
+  // the weekly/custom buckets.
+  const chartData = getDateRangeData(filteredRequests, viewMode, year, startDate, endDate);
 
   const totalValid = filteredRequests.filter(r => r.breach_status === "Valid").length;
   const totalBreached = filteredRequests.filter(r => r.breach_status === "Breached").length;

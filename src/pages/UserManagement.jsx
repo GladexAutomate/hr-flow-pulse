@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { UserPlus, Trash2, Mail, Shield, User, Loader2, RefreshCw } from "lucide-react";
+import { UserPlus, Trash2, Mail, Loader2, RefreshCw } from "lucide-react";
 import DeleteUserDialog from "../components/DeleteUserDialog";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("anonymous");
   const [inviting, setInviting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);

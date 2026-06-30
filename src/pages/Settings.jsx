@@ -4,7 +4,6 @@ import { base44 } from "@/api/base44Client";
 import { LogOut, Copy, Check, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WebhookSettings from "@/components/settings/WebhookSettings";
-import ExportScheduleModule from "@/components/settings/ExportScheduleModule";
 import DailyReportSettings from "@/components/settings/DailyReportSettings";
 import SlaSettings from "@/components/settings/SlaSettings";
 
@@ -60,9 +59,6 @@ export default function Settings() {
 
       {/* SLA Settings */}
       <SlaSettings />
-
-      {/* Export Schedule Module */}
-      <ExportScheduleModule />
 
       {/* Webhook Settings */}
       <WebhookSettings />

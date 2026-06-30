@@ -161,29 +161,38 @@ function HRTrackerList() {
         return;
       }
     }
-    // Auto-fill dates when completing
+    // Build the payload without mutating editData state. When completing, fill in
+    // missing dates — but never overwrite an existing date_started with an empty
+    // value (that previously wiped the start date and mis-set the breach status).
     const today = new Date().toISOString().split("T")[0];
-    if (editData.status === "Completed") {
-      if (!editData.date_started && !req.date_started) editData.date_started = today;
-      if (!editData.date_completed) editData.date_completed = today;
+    const next = { ...editData };
+    if (next.status === "Completed") {
+      if (!next.date_started) next.date_started = req.date_started || today;
+      if (!next.date_completed) next.date_completed = req.date_completed || today;
     }
-    const breach_status = computeBreach({ ...req, ...editData });
+    const breach_status = computeBreach({ ...req, ...next });
     const newTimeline = [
       ...(Array.isArray(req.timeline) ? req.timeline : []),
       {
         timestamp: new Date().toISOString(),
         action: "Status Updated",
         user: user?.email || "HR Staff",
-        details: `Status changed to: ${editData.status}${editData.date_started ? ` | Date Started: ${editData.date_started}` : ""}${editData.date_completed ? ` | Date Completed: ${editData.date_completed}` : ""}`,
+        details: `Status changed to: ${next.status}${next.date_started ? ` | Date Started: ${next.date_started}` : ""}${next.date_completed ? ` | Date Completed: ${next.date_completed}` : ""}`,
       },
     ];
-    // Optimistic update
-    const optimisticUpdate = { ...editData, breach_status };
-    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, ...optimisticUpdate } : r));
+    // Optimistic update, with rollback if the backend write fails.
+    const prevSnapshot = requests.find(r => r.id === req.id);
+    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, ...next, breach_status } : r));
     setEditingId(null);
-    await base44.entities.HRRequest.update(req.id, { ...editData, breach_status, timeline: newTimeline });
-    // Re-sync just this row from the backend (no full-table reload).
-    refreshOne(req.id);
+    try {
+      await base44.entities.HRRequest.update(req.id, { ...next, breach_status, timeline: newTimeline });
+      // Re-sync just this row from the backend (no full-table reload).
+      await refreshOne(req.id);
+    } catch (e) {
+      // Roll back the optimistic change so the UI doesn't show a phantom success.
+      if (prevSnapshot) setRequests(prev => prev.map(r => r.id === req.id ? prevSnapshot : r));
+      alert("Failed to save changes: " + (e?.message || "please try again."));
+    }
   };
 
   const viewReq = (req) => {
