@@ -114,8 +114,10 @@ function HRTrackerList() {
   const [editData, setEditData] = useState({});
   const [viewingReq, setViewingReq] = useState(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async ({ silent = false } = {}) => {
+    // Only show the full-table spinner on the initial load / explicit refresh —
+    // never when quietly re-syncing after an edit, so the table doesn't flash.
+    if (!silent) setLoading(true);
     const data = await base44.entities.HRRequest.list("-created_date", 2000);
     setRequests(data);
     setLoading(false);
@@ -123,12 +125,22 @@ function HRTrackerList() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleUpdated = async () => {
-    await fetchData();
-    if (viewingReq) {
-      const fresh = await base44.entities.HRRequest.filter({ id: viewingReq.id });
-      if (fresh?.length) setViewingReq(fresh[0]);
+  // Pull a single record's latest state from the backend and merge it into the
+  // list in place. Used after edits/attachment changes so we reflect real backend
+  // changes without refetching all 2000 records (which caused the constant reload).
+  const refreshOne = async (id) => {
+    const fresh = await base44.entities.HRRequest.filter({ id });
+    if (fresh?.length) {
+      setRequests(prev => prev.map(r => (r.id === id ? fresh[0] : r)));
+      return fresh[0];
     }
+    return null;
+  };
+
+  const handleUpdated = async () => {
+    if (!viewingReq) return;
+    const fresh = await refreshOne(viewingReq.id);
+    if (fresh) setViewingReq(fresh);
   };
 
   const startEdit = (req) => {
@@ -170,7 +182,8 @@ function HRTrackerList() {
     setRequests(prev => prev.map(r => r.id === req.id ? { ...r, ...optimisticUpdate } : r));
     setEditingId(null);
     await base44.entities.HRRequest.update(req.id, { ...editData, breach_status, timeline: newTimeline });
-    fetchData();
+    // Re-sync just this row from the backend (no full-table reload).
+    refreshOne(req.id);
   };
 
   const viewReq = (req) => {
@@ -225,7 +238,7 @@ function HRTrackerList() {
     {viewingReq && (
       <DetailsModal
         req={viewingReq}
-        onClose={() => { setViewingReq(null); fetchData(); }}
+        onClose={() => setViewingReq(null)}
         onUpdated={handleUpdated}
         user={user}
       />
@@ -288,7 +301,7 @@ function HRTrackerList() {
 
       {/* Mobile card list (< md) */}
       <div className="md:hidden">
-        <PullToRefresh onRefresh={fetchData}>
+        <PullToRefresh onRefresh={() => fetchData({ silent: true })}>
           <div className="space-y-3">
             {loading ? (
               <div className="flex items-center justify-center py-20">
